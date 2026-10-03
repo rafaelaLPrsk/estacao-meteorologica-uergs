@@ -1,0 +1,131 @@
+/* Layout "painel único": navegação de dias à esquerda, dados à direita, sem cartões soltos */
+.hist-wrapper {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 10px 0 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-family: sans-serif;
+}
+
+.hist-titulo { display: flex; flex-direction: column; gap: 2px; }
+.hist-titulo h2 { font-size: 20px; font-weight: 800; color: var(--primaria); }
+.hist-sub { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--neutra); }
+
+.hist-painel {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+/* Coluna de dias */
+.hist-dias {
+    display: flex;
+    flex-direction: column;
+    background: var(--primaria);
+    padding: 12px;
+    gap: 2px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+}
+
+.hist-dia {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    color: rgba(255, 255, 255, 0.65);
+    padding: 10px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.hist-dia-nome { font-size: 13px; font-weight: 700; }
+.hist-dia-faixa { font-size: 10px; opacity: 0.8; }
+.hist-dia:hover { background: rgba(255, 255, 255, 0.08); }
+.hist-dia.ativo { background: #ffffff; color: var(--primaria); }
+.hist-dia-semana { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: rgba(255, 255, 255, 0.65); margin-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px 10px 0 0; }
+.hist-dia-semana.ativo { color: var(--primaria); }
+
+/* Conteúdo */
+.hist-conteudo { display: flex; flex-direction: column; gap: 16px; min-width: 0; animation: hist-entrada 0.35s ease; }
+
+@keyframes hist-entrada {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.hist-resumos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: #ffffff;
+    border-radius: 18px;
+    border-top: 3px solid var(--primaria);
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+}
+
+.hist-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 18px;
+    border-left: 1px solid rgba(15, 40, 71, 0.1);
+}
+.hist-stat:first-child { border-left: none; }
+
+.hist-stat-topo { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--neutra); }
+.hist-icone { width: 15px; height: 15px; color: var(--secundaria); }
+.hist-stat strong { font-size: 26px; font-weight: 800; color: var(--primaria); }
+.hist-stat small { font-size: 11px; font-weight: 500; color: var(--neutra); margin-left: 3px; }
+.hist-stat-detalhe { font-size: 11px; color: var(--neutra); }
+
+/* Gráficos separados por fios, sem caixas */
+.hist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.hist-bloco {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+}
+.hist-bloco h3 { font-size: 14px; font-weight: 800; color: var(--primaria); }
+.hist-bloco header { display: flex; flex-direction: column; gap: 2px; }
+
+.hist-legenda { min-height: 16px; display: flex; gap: 16px; font-size: 11px; color: var(--neutra); }
+.hist-legenda i { display: inline-block; width: 18px; margin-right: 5px; vertical-align: middle; }
+.leg-max { border-top: 3px solid var(--primaria); }
+.leg-min { border-top: 3px solid var(--secundaria); }
+
+.hist-grafico { width: 100%; height: auto; max-height: 170px; background: var(--superficie); border-radius: 12px; }
+.hist-grade { stroke: rgba(15, 40, 71, 0.1); stroke-width: 1; }
+.hist-eixo { font-size: 9px; fill: var(--neutra); }
+.hist-hoje { font-weight: 700; fill: var(--primaria); }
+.hist-linha-max { fill: none; stroke: var(--primaria); stroke-width: 2.5; }
+.hist-linha-min { fill: none; stroke: var(--secundaria); stroke-width: 2.5; }
+.hist-linha-max-ponto { fill: #ffffff; stroke: var(--primaria); stroke-width: 2.5; }
+.hist-linha-min-ponto { fill: #ffffff; stroke: var(--secundaria); stroke-width: 2.5; }
+.hist-barra { fill: var(--neutra); opacity: 0.55; }
+.hist-barra-hoje { fill: var(--primaria); opacity: 1; }
+
+@media (max-width: 900px) {
+    .hist-painel { grid-template-columns: 1fr; }
+    .hist-dias { flex-direction: row; overflow-x: auto; }
+    .hist-dia { white-space: nowrap; }
+    .hist-resumos { grid-template-columns: repeat(2, 1fr); }
+    .hist-grid { grid-template-columns: 1fr; }
+    .hist-wrapper { padding-inline: 16px; }
+}

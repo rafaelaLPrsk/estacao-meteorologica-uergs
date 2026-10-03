@@ -1,0 +1,136 @@
+.painel-clima-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 0 10px 0;
+}
+
+.bloco-esquerda {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.localizacao-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.badge-ao-vivo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primaria);
+    color: #ffffff;
+    font-family: sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 6px 14px;
+    border-radius: 999px;
+}
+
+.ponto-ao-vivo {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: piscar 1.2s ease-in-out infinite;
+}
+
+@keyframes piscar {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px 2px rgba(239, 68, 68, 0.7); }
+    50% { opacity: 0.15; box-shadow: none; }
+}
+
+.texto-local {
+    font-family: sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primaria);
+    letter-spacing: 1px;
+}
+
+.dados-principais {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    width: 100%;
+}
+
+.valor-temperatura small, .valor-chuva small {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--secundaria);
+    margin-left: 4px;
+}
+
+.diagnostico {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 10px 18px;
+}
+
+.diagnostico-conteudo {
+    display: flex;
+    flex-direction: column;
+}
+
+.diagnostico-icone {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--superficie);
+    color: var(--secundaria);
+    border-radius: 12px;
+}
+
+.diagnostico-titulo {
+    font-family: sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--neutra);
+}
+
+.diagnostico-texto {
+    font-family: sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primaria);
+}
+
+.item-clima {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.icone-grande {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: var(--secundaria);
+    border-radius: 16px;
+}
+
+.valor-temperatura, .valor-chuva {
+    font-family: sans-serif;
+    font-size: 54px;
+    font-weight: 800;
+    color: var(--primaria);
+}

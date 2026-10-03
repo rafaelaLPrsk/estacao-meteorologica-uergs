@@ -1,0 +1,236 @@
+.comp-wrapper {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 10px 0 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: sans-serif;
+}
+
+.comp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-items: stretch;
+}
+
+/* Cartões: dois brancos (estação e referência) e um azul-claro (desvio) */
+.comp-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+    font-family: sans-serif;
+}
+
+.comp-card-local { border-top: 3px solid var(--primaria); }
+.comp-card-oficial { border-top: 3px solid var(--neutra); }
+.comp-card-delta { background: #F1F4F8; border-top: 3px solid var(--primaria); }
+
+.comp-cabecalho {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.comp-cabecalho > div { flex: 1; display: flex; flex-direction: column; }
+
+.comp-icone-cab {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--superficie);
+    color: var(--secundaria);
+    border-radius: 10px;
+}
+
+.comp-card-delta .comp-icone-cab { background: #ffffff; }
+
+.comp-icone { width: 18px; height: 18px; flex-shrink: 0; }
+.comp-icone-cab .comp-icone { width: 18px; height: 18px; }
+
+.comp-card h3 {
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--primaria);
+}
+
+.comp-sub {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--neutra);
+}
+
+.comp-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--secundaria);
+    background: var(--superficie);
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
+/* Linhas de dados */
+.comp-linha {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    background: var(--superficie);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--neutra);
+}
+
+.comp-card-delta .comp-linha { background: #ffffff; }
+
+.comp-rotulo { display: flex; align-items: center; gap: 8px; }
+.comp-rotulo .comp-icone { color: var(--secundaria); }
+
+.comp-linha strong {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--primaria);
+}
+
+
+.comp-linha small {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--neutra);
+    margin-left: 3px;
+}
+
+.comp-linha strong.comp-condicao { font-size: 14px; }
+
+.comp-linha-delta { padding: 8px 12px; }
+.comp-delta-texto { display: flex; flex-direction: column; gap: 2px; }
+.comp-delta-nome { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; color: var(--primaria); }
+.comp-delta-sub { font-size: 10px; color: var(--neutra); }
+
+.comp-linha strong.comp-chip {
+    font-size: 13px;
+    background: #E2E8F0;
+    color: var(--primaria);
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+
+.comp-chip small { color: var(--primaria); }
+
+/* Nota explicativa e rodapé */
+.comp-nota {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+    background: #E2E8F0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--primaria);
+}
+
+.comp-nota p { margin: 0; }
+.comp-nota .comp-icone { color: var(--neutra); margin-top: 1px; }
+
+.comp-rodape {
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+    padding: 6px 4px 0;
+    font-size: 10px;
+    color: var(--neutra);
+}
+
+.comp-destaque { font-weight: 700; color: var(--secundaria); }
+
+/* Gráfico */
+.comp-grafico-card { border-top: none; background: #ffffff; padding: 16px; }
+.comp-grafico-card h3 { font-size: 14px; }
+
+.comp-grafico-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.comp-abas {
+    display: flex;
+    background: var(--superficie);
+    border-radius: 999px;
+    padding: 4px;
+}
+
+.comp-abas button {
+    border: none;
+    background: none;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--neutra);
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.comp-abas button.ativo {
+    background: var(--primaria);
+    color: #ffffff;
+}
+
+.comp-legenda {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--neutra);
+}
+
+.comp-legenda i {
+    display: inline-block;
+    width: 22px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+.leg-local { border-top: 3px solid var(--secundaria); }
+.leg-oficial { border-top: 3px dashed var(--primaria); }
+
+.comp-grafico { width: 100%; height: auto; background: var(--superficie); border-radius: 18px; }
+.comp-grade { stroke: #d5e0f3; stroke-width: 1; }
+.comp-eixo { font-size: 11px; fill: var(--neutra); }
+.comp-linha-local { fill: none; stroke: var(--secundaria); stroke-width: 3; }
+.comp-area-local { fill: url(#comp-degrade); }
+.comp-linha-oficial { fill: none; stroke: var(--primaria); stroke-width: 2; stroke-dasharray: 6 5; }
+.comp-ponto-local { fill: #ffffff; stroke: var(--secundaria); stroke-width: 3; }
+.comp-ponto-oficial { fill: #ffffff; stroke: var(--primaria); stroke-width: 3; }
+
+@media (max-width: 900px) {
+    .comp-grid { grid-template-columns: 1fr; }
+    .comp-wrapper { padding-inline: 16px; }
+}
+
+.comp-wrapper button { font-family: inherit; }
+.comp-grafico { max-height: 200px; }
+
+.comp-grafico-barras { max-height: 220px; }
+.comp-tolerancia { stroke: var(--neutra); stroke-width: 1; stroke-dasharray: 4 4; }
+.comp-barra-1 { fill: #CBD5E1; }
+.comp-barra-2 { fill: #8EA3BD; }
+.comp-barra-3 { fill: var(--primaria); }
+.comp-valor-barra { font-size: 11px; font-weight: 700; fill: var(--primaria); }
+.comp-eixo-hoje { font-weight: 700; fill: var(--primaria); }
+.comp-rodape-disc { flex-wrap: wrap; gap: 8px 16px; border-top: 1px solid rgba(15, 40, 71, 0.08); padding-top: 10px; }
+.comp-grafico-card .seletor-dia { box-shadow: none; background: var(--superficie); }
+.comp-grafico-card .seletor-dia button.ativo { background: var(--primaria); }

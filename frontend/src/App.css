@@ -1,0 +1,21 @@
+/* Isso tira as margens brancas chatas que o navegador coloca por padrão */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Essa é a classe que vai envelopar todo o nosso site */
+.tela-principal {
+  /* Apontamos para a imagem que você colocou na pasta assets */
+  background-image: url('./assets/fundo-gotas.png');
+
+  /* Essas 3 linhas garantem que a imagem cubra a tela toda perfeitamente, sem distorcer */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* Garante que o fundo ocupe 100% da altura (vh = viewport height) da tela */
+  min-height: 100vh;
+  width: 100%;
+}

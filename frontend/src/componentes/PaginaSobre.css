@@ -1,0 +1,131 @@
+.sobre-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 60px;
+    width: 100%;
+}
+
+/* -------------------------------------- */
+/* CAIXA BRANCA PRINCIPAL */
+/* -------------------------------------- */
+.card-sobre {
+    background-color: #ffffff;
+    border-radius: 35px;
+    /* Tiramos o padding da esquerda porque o GPS vai ocupar aquele espaço */
+    padding: 36px 50px 36px 0;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 1050px;
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+    margin-top: 30px;
+}
+
+/* O TRUQUE: O margin-left negativo puxa o GPS para a esquerda, fora do cartão! */
+.bloco-gps {
+    background-color: var(--primaria);
+    border-radius: 20px;
+    width: 340px;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 6px;
+    flex-shrink: 0;
+    margin-left: 36px; /* Dentro do cartão */
+    margin-right: 50px; /* Empurra o texto para longe dele */
+    box-shadow: 0 10px 20px rgba(15, 40, 71, 0.25); /* Uma sombra para dar 3D */
+}
+
+.mapa {
+    border: none;
+    width: 100%;
+    flex: 1;
+    border-radius: 15px;
+}
+
+.texto-gps-interno {
+    font-family: sans-serif;
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+    text-align: center;
+    margin: 8px 6px 4px;
+}
+
+.texto-sobre {
+    font-family: sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--primaria);
+    line-height: 1.7;
+    flex: 1; /* Faz o texto preencher todo o resto do cartão branco */
+}
+
+
+.rodape-sobre {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1000px; /* Fica alinhado com o cartão de cima */
+    margin-top: 40px;  /* Distância para o cartão branco */
+}
+
+.rodape-logo {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.img-uergs {
+    width: 120px; /* Ajuste esse número se a sua imagem ficar muito grande ou pequena */
+    object-fit: contain;
+}
+
+.rodape-texto {
+    flex: 2; /* Ocupa mais espaço que os cantos, mantendo-se no centro */
+    font-family: sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primaria);
+    line-height: 1.5;
+    padding: 0 40px; /* Dá um respiro entre a logo e a seta */
+}
+
+.rodape-voltar {
+    flex: 0.5;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.botao-voltar {
+    background: none;
+    border: none;
+    font-size: 55px;
+    cursor: pointer;
+    color: var(--primaria);
+    font-weight: bold;
+}
+.texto-sobre h2 { font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+.texto-sobre p + p { margin-top: 12px; }
+
+.etiquetas-sobre { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.etiquetas-sobre span {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--secundaria);
+    background: var(--superficie);
+    border-radius: 999px;
+    padding: 5px 14px;
+}
+
+@media (max-width: 900px) {
+    .sobre-wrapper { padding: 20px 16px; }
+    .card-sobre { flex-direction: column; padding: 16px; }
+    .bloco-gps { width: 100%; margin: 0 0 20px; }
+    .rodape-sobre { flex-direction: column; gap: 16px; }
+}

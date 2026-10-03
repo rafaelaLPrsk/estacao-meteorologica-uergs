@@ -1,0 +1,31 @@
+.seletor-dia {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    max-width: 100%;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+    font-family: sans-serif;
+}
+
+.seletor-dia button {
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--neutra);
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.seletor-dia button.ativo { background: var(--primaria); color: #ffffff; }
+.seletor-dia .seletor-semana { font-size: 10px; letter-spacing: 0.5px; color: var(--secundaria); }
+.seletor-dia .seletor-semana.ativo { color: #ffffff; }
+.seletor-separador { width: 1px; height: 16px; background: rgba(15, 40, 71, 0.15); margin: 0 4px; }

@@ -1,0 +1,9 @@
+
+:root {
+  --primaria: #0F2847;
+  --secundaria: #0284C7;
+  --terciaria: #38BDF8;
+  --neutra: #64748B;
+  --superficie: #EEF4FF;
+}
+body { font-family: sans-serif; color: var(--primaria); }
