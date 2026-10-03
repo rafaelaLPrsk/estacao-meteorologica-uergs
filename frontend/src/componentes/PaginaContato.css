@@ -1,0 +1,65 @@
+.contato-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 60px;
+    width: 100%;
+    gap: 20px;
+    font-family: sans-serif;
+}
+
+/* Cartão único: texto à esquerda, lista de pessoas à direita */
+.card-contato {
+    background-color: #ffffff;
+    border-radius: 35px;
+    padding: 48px 56px;
+    width: 100%;
+    max-width: 1100px;
+    box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
+    color: var(--primaria);
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 56px;
+}
+
+.contato-intro { border-right: 1px solid rgba(15, 40, 71, 0.12); padding-right: 40px; }
+.contato-intro h2 { font-size: 28px; font-weight: 800; margin-bottom: 16px; }
+.contato-intro p { font-size: 15px; line-height: 1.7; color: var(--neutra); }
+.contato-intro p + p { margin-top: 12px; }
+
+.secao-contato {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--secundaria);
+    margin-bottom: 4px;
+}
+.contato-lista ul + .secao-contato { margin-top: 30px; }
+.contato-lista ul { list-style: none; padding: 0; margin: 0; }
+
+.pessoa-contato {
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(15, 40, 71, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.pessoa-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.nome-contato { font-size: 16px; font-weight: 800; }
+.papel-contato { font-size: 12px; color: var(--neutra); }
+.email-contato { font-size: 14px; color: var(--primaria); overflow-wrap: anywhere; }
+
+.link-linkedin {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--secundaria);
+    text-decoration: none;
+}
+.link-linkedin:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+    .contato-wrapper { padding: 20px 16px; }
+    .card-contato { grid-template-columns: 1fr; gap: 28px; padding: 28px 22px; }
+    .contato-intro { border-right: none; padding-right: 0; }
+}

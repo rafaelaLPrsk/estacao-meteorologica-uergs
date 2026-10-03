@@ -1,16 +1,25 @@
-# React + Vite
+# Estação Meteorológica UERGS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Painel web da estação de Guaíba, comparando os sensores com a OpenWeather.
 
-Currently, two official plugins are available:
+```
+frontend/   React + Vite (telas)
+backend/    Node + Express (lê o Firebase, consulta a OpenWeather, analisa e salva)
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Fluxo
+1. O ESP32 grava as leituras no Firebase `tempo-uergs` (`estacao/ESTACAO_001`).
+2. A cada 5 min o backend lê a estação, descarta valores fora da faixa real, consulta a OpenWeather e gera a análise do momento.
+3. Se os dados da estação são recentes (≤ 15 min), salva a leitura no banco `dados-openweather` (`historico` e `analise_atual`).
+4. O frontend consulta o backend (`/api/sensores`, `/api/analise`, `/api/historico`, `/api/comparativo`) e monta cards e gráficos.
 
-## React Compiler
+Enquanto não houver histórico salvo, as telas de gráficos usam dados de exemplo (`frontend/src/dadosExemplo.js`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Rodar
+Coloque a chave da conta de serviço do `dados-openweather` em `backend/src/chave.json` (não vai para o git).
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+cd backend  && cp .env.example .env   # preencher OPENWEATHER_KEY
+npm install && npm run dev            # porta 3001
+cd frontend && npm install && npm run dev
+```
