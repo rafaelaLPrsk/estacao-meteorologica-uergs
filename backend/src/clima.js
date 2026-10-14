@@ -14,26 +14,33 @@ const valido = (campo, v) => typeof v === 'number' && Number.isFinite(v) && v >=
 
 // ---------- Leitura da estação (banco tempo-uergs) ----------
 export async function lerSensores() {
-    const s = (await get(ref(db, `estacao/${ESTACAO}/sensores`))).val();
-    if (!s) return null;
+    const snap = await get(query(ref(db, `estacao/${ESTACAO}/leituras`), limitToLast(1)));
+    const val = snap.val();
+    if (!val) return null;
 
-    const pega = (campo, no) => (no?.ativo !== false && valido(campo, no?.valor) ? no.valor : null);
-    const tempos = [s.temperatura, s.umidade, s.pressao_atm, s.chuva, s.uv, s.luminosidade]
-        .map((n) => Date.parse(n?.timestamp)).filter(Number.isFinite);
-    const ultimo = tempos.length ? Math.max(...tempos) : null;
+    const s = Object.values(val)[0];
+
+    // Função inteligente: se o sensor enviou um objeto com "valor" (ex: {unidade: "ºC", valor: 17.9}), ela extrai só o número.
+    const pega = (campo, no) => {
+        const v = (no && typeof no === 'object' && no.valor !== undefined) ? no.valor : no;
+        const num = Number(v);
+        return valido(campo, num) ? num : null;
+    };
+
+    const ultimo = s.dataHora ? Date.parse(s.dataHora) : null;
 
     return {
-        temperatura: pega('temperatura', s.temperatura),
-        umidade: pega('umidade', s.umidade),
-        pressao: pega('pressao', s.pressao_atm),
-        chuva: pega('chuva', s.chuva),
-        uv: pega('uv', s.uv),
-        luminosidade: pega('luminosidade', s.luminosidade),
-        ventoVelocidade: pega('ventoVelocidade', s.vento?.velocidade),
-        ventoDirecao: s.vento?.direcao?.valor ?? null,
-        atualizadoEm: ultimo ? new Date(ultimo).toISOString() : null,
-        // 'agora' = dado recente | 'ultimo' = último registro conhecido | 'desconhecido' = sem horário
-        status: !ultimo ? 'desconhecido' : Date.now() - ultimo <= ATUAL_ATE_MS ? 'agora' : 'ultimo',
+        // Agora indicamos o caminho exato que vimos na sua imagem:
+        temperatura: pega('temperatura', s?.humidade?.temperatura),
+        umidade: pega('umidade', s?.humidade?.humidade),
+        pressao: pega('pressao', s?.pressao),
+        chuva: pega('chuva', s?.chuva),
+        uv: pega('uv', s?.uv),
+        luminosidade: pega('luminosidade', s?.luminosidade),
+        ventoVelocidade: pega('ventoVelocidade', s?.vento),
+        ventoDirecao: null,
+        atualizadoEm: ultimo && Number.isFinite(ultimo) ? new Date(ultimo).toISOString() : new Date().toISOString(),
+        status: !ultimo || !Number.isFinite(ultimo) ? 'desconhecido' : Date.now() - ultimo <= ATUAL_ATE_MS ? 'agora' : 'ultimo',
     };
 }
 
