@@ -2,6 +2,7 @@ import { useState } from 'react';
 import SeletorDia from './SeletorDia';
 import { useHistorico } from '../hooks/useHistorico';
 import { useComparativo } from '../hooks/useComparativo';
+import { minutosDesde, duracao, estaAtrasado } from '../tempo';
 import './PaginaComparativo.css';
 
 // Rótulos do eixo: de 2 em 2 horas, terminando em "Agora"
@@ -159,6 +160,14 @@ function PaginaComparativo() {
     const { local: loc, oficial: ofi, series } = useComparativo();
     const local = loc ?? {};
     const oficial = ofi ?? {};
+    // Atraso de cada lado e defasagem entre as duas medições
+    const atrasoLocal = minutosDesde(local.atualizadoEm);
+    const horaOw = oficial.medidoEm ?? oficial.coletadoEm; // sem a hora da OpenWeather, vale a da consulta
+    const atrasoOw = horaOw ? minutosDesde(horaOw) : null;
+    const localAtrasado = estaAtrasado(atrasoLocal);
+    const owAtrasado = estaAtrasado(atrasoOw);
+    const defasagem = local.atualizadoEm && oficial.medidoEm
+        ? Math.round(Math.abs(Date.parse(local.atualizadoEm) - oficial.medidoEm) / 60000) : null;
     const delta = (k) => (local[k] == null || oficial[k] == null ? null : local[k] - oficial[k]);
     const serie = series[metrica];
     const dp = serie ? desvioPadrao(serie.local.map((v, i) => v - serie.oficial[i])) : null;
@@ -196,8 +205,9 @@ function PaginaComparativo() {
                     ))}
                     <footer className="comp-rodape">
                         <span>Sensores da estação</span>
-                        <span className="comp-destaque">
-                            {local.status === 'agora' ? 'Dados de agora' : local.status ? 'Últimos dados registrados' : 'Sem dados'}
+                        <span className={`comp-destaque ${localAtrasado ? 'comp-atraso' : ''}`}>
+                            {localAtrasado ? `⚠ Atrasado há ${duracao(atrasoLocal)}`
+                                : local.status === 'agora' ? 'Dados de agora' : local.status ? 'Últimos dados registrados' : 'Sem dados'}
                             {hhmm(local.atualizadoEm) && ` · medido às ${hhmm(local.atualizadoEm)}`}
                         </span>
                     </footer>
@@ -227,6 +237,7 @@ function PaginaComparativo() {
                         <p>
                             <b>Desvio padrão ({METRICAS[metrica].rotulo}):</b> σ {dp === null ? '--' : dp.toFixed(2)} {METRICAS[metrica].unidade}
                             {' '}nas últimas 12 horas.
+                            {defasagem !== null && ` Defasagem entre as medições: ${defasagem} min.`}
                         </p>
                     </div>
                 </section>
@@ -252,8 +263,9 @@ function PaginaComparativo() {
                     </div>
                     <footer className="comp-rodape">
                         <span>Estação base: Guaíba</span>
-                        <span className="comp-destaque">
-                            OpenWeather{hhmm(oficial.coletadoEm) && ` · consultada às ${hhmm(oficial.coletadoEm)}`}
+                        <span className={`comp-destaque ${owAtrasado ? 'comp-atraso' : ''}`}>
+                            {owAtrasado ? `⚠ Atrasado há ${duracao(atrasoOw)} · OpenWeather` : 'OpenWeather'}
+                            {oficial.medidoEm ? ` · medido às ${hhmm(oficial.medidoEm)}` : hhmm(oficial.coletadoEm) && ` · consultada às ${hhmm(oficial.coletadoEm)}`}
                         </span>
                     </footer>
                 </section>

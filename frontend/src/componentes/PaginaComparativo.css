@@ -236,3 +236,5 @@
 .comp-grafico-card .seletor-dia button.ativo { background: var(--primaria); }
 
 .comp-vazio { padding: 32px 16px; text-align: center; font-size: 14px; font-weight: 600; color: var(--neutra); background: var(--superficie); border-radius: 18px; }
+
+.comp-atraso { color: #B45309; font-weight: 700; }

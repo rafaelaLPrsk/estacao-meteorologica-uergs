@@ -1,6 +1,7 @@
 
 import { useSensores } from '../hooks/useSensores';
 import { useAnalise } from '../hooks/useAnalise';
+import { duracao, estaAtrasado } from '../tempo';
 
 //  importações de CSS e imagens
 import './PainelClima.css';
@@ -26,7 +27,9 @@ function PainelClima() {
     const quando = s.atualizadoEm ? new Date(s.atualizadoEm) : null;
     const hora = quando?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const dataHora = quando && `${quando.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${hora}`;
-    const horaAtualizacao = s.status === 'agora' ? `Agora · atualizado às ${hora}`
+    const atrasado = estaAtrasado(s.atrasoMin);
+    const horaAtualizacao = atrasado ? `⚠ DADOS ATRASADOS HÁ ${duracao(s.atrasoMin).toUpperCase()} · última leitura ${dataHora}`
+        : s.status === 'agora' ? `Agora · atualizado às ${hora}`
         : quando ? `Últimos dados · ${dataHora}`
         : 'Últimos dados registrados';
 
@@ -41,7 +44,7 @@ function PainelClima() {
                     <span className="badge-ao-vivo">
                         <span className="ponto-ao-vivo" /> ESTAÇÃO AO VIVO
                     </span>
-                    <span className="texto-local">
+                    <span className={`texto-local ${atrasado ? 'texto-atraso' : ''}`}>
                         GUAÍBA - JARDIM DOS LAGOS - {horaAtualizacao}
                     </span>
                 </div>

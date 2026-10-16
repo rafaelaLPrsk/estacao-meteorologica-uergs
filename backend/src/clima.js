@@ -48,7 +48,7 @@ export async function lerSensores() {
 // ---------- OpenWeather (referência oficial da cidade) ----------
 export let oficialAtual = null;
 
-async function lerOpenWeather() {
+export async function lerOpenWeather() {
     const { OPENWEATHER_KEY, OPENWEATHER_CIDADE = 'Guaiba,BR' } = process.env;
     if (!OPENWEATHER_KEY) return null;
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(OPENWEATHER_CIDADE)}&units=metric&lang=pt_br&appid=${OPENWEATHER_KEY}`;
@@ -64,21 +64,74 @@ async function lerOpenWeather() {
         pressaoMar: em('pressao', j.main.sea_level ?? j.main.pressure), // reduzida ao nível do mar
         vento: em('ventoVelocidade', j.wind.speed * 3.6), // m/s -> km/h
         condicao: j.weather?.[0]?.description ?? null,
+        medidoEm: Number.isFinite(j.dt) ? j.dt * 1000 : null, // hora em que a OpenWeather mediu (ms), não a da consulta
     };
 }
 
 // ---------- Análise do momento ----------
-function analisar(a, anterior) {
-    const pressaoCaindo = anterior?.pressao != null && a.pressao != null && a.pressao < anterior.pressao;
-    const esquentando = anterior?.temperatura != null && a.temperatura != null && a.temperatura > anterior.temperatura + 1;
+// A frase usa TENDÊNCIA (comparação com ~3 h atrás), não duas leituras seguidas: a pressão oscila ±0,1 hPa
+// por ruído do sensor, e isso fazia a frase trocar a cada leitura. Usa histerese (entra num limite, sai noutro).
+const JANELA_TENDENCIA_H = 3;
+const TOLERANCIA_JANELA_MS = 45 * 60 * 1000; // sem leitura a ~3 h (±45 min), não há tendência
+const PRESSAO_QUEDA = { entra: 1, sai: 0.5 };   // hPa em 3 h (padrão meteorológico: ≥ 1 hPa/3 h já é queda)
+const PRESSAO_QUEDA_RAPIDA = 3;                  // hPa em 3 h
+const TEMPERATURA_VARIACAO = 3;                  // °C em 3 h
+const UMIDADE_ALTA = { entra: 80, sai: 77 };     // %
 
-    if (a.chuva > 0) return 'Chuva em andamento: pode haver acúmulo de água e redução da visibilidade.';
-    if (pressaoCaindo && a.umidade > 80) return 'Pressão em queda e umidade alta: possibilidade de chuva nas próximas horas.';
-    if (a.ventoVelocidade > 40) return 'Ventos fortes: atenção a rajadas e queda de objetos.';
-    if (esquentando) return 'Temperatura subindo rapidamente: tendência de tempo mais quente nas próximas horas.';
-    if (a.umidade != null && a.umidade < 40) return 'Ar muito seco: risco de desconforto respiratório e de focos de incêndio.';
-    if (a.umidade == null && a.pressao == null) return 'Dados insuficientes para analisar o clima.';
-    return 'Tempo estável: sem sinais de mudança brusca nas próximas horas.';
+// Leitura do histórico mais próxima de `horas` atrás (null se não houver uma por perto)
+export function leituraDeHa(leituras, horas, referenciaMs) {
+    const alvo = referenciaMs - horas * 3600000;
+    let melhor = null, menor = Infinity;
+    for (const l of leituras) {
+        const d = Math.abs(l.timestamp - alvo);
+        if (d < menor) { menor = d; melhor = l; }
+    }
+    return menor <= TOLERANCIA_JANELA_MS ? melhor : null;
+}
+
+// delta = pressão agora - pressão de 3 h atrás; `anterior` é o estado salvo na análise anterior
+function tendenciaPressao(delta, anterior) {
+    if (delta == null) return 'estavel';
+    if (delta <= -PRESSAO_QUEDA.entra || (anterior === 'queda' && delta <= -PRESSAO_QUEDA.sai)) return 'queda';
+    if (delta >= PRESSAO_QUEDA.entra || (anterior === 'alta' && delta >= PRESSAO_QUEDA.sai)) return 'alta';
+    return 'estavel';
+}
+
+// a = leitura atual | passado = leitura de ~3 h atrás (ou null) | estadoAnterior = { pressao, umidadeAlta } da análise anterior
+export function analisar(a, passado, estadoAnterior = {}) {
+    const dP = a.pressao != null && passado?.pressao != null ? a.pressao - passado.pressao : null;
+    const dT = a.temperatura != null && passado?.temperatura != null ? a.temperatura - passado.temperatura : null;
+    const pressao = tendenciaPressao(dP, estadoAnterior.pressao);
+    const umidadeAlta = a.umidade != null && (a.umidade > UMIDADE_ALTA.entra || (estadoAnterior.umidadeAlta === true && a.umidade > UMIDADE_ALTA.sai));
+    const estado = { pressao, umidadeAlta };
+
+    let texto;
+    if (a.chuva > 0) texto = 'Chuva em andamento: pode haver acúmulo de água e redução da visibilidade.';
+    else if (a.ventoVelocidade > 40) texto = 'Ventos fortes: atenção a rajadas e queda de objetos.';
+    else if (dP != null && dP <= -PRESSAO_QUEDA_RAPIDA) texto = 'Pressão em queda rápida: risco de tempo instável ou tempestade nas próximas horas.';
+    else if (pressao === 'queda' && umidadeAlta) texto = 'Pressão em queda e umidade alta: possibilidade de chuva nas próximas horas.';
+    else if (pressao === 'queda') texto = 'Pressão em queda: o tempo tende a ficar instável.';
+    else if (dT != null && dT >= TEMPERATURA_VARIACAO) texto = 'Temperatura subindo rapidamente: tendência de tempo mais quente nas próximas horas.';
+    else if (dT != null && dT <= -TEMPERATURA_VARIACAO) texto = 'Temperatura caindo rapidamente: tendência de tempo mais frio nas próximas horas.';
+    else if (a.umidade != null && a.umidade < 40) texto = 'Ar muito seco: risco de desconforto respiratório e de focos de incêndio.';
+    else if (a.umidade == null && a.pressao == null) texto = 'Dados insuficientes para analisar o clima.';
+    else if (pressao === 'alta') texto = 'Pressão em alta: tendência de tempo firme e estável.';
+    else texto = 'Tempo estável: sem sinais de mudança brusca nas próximas horas.';
+    return { texto, estado };
+}
+
+// A análise só é recalculada a cada 5 min (lê ~3 h de histórico, então poupa tráfego do Firebase)
+const ANALISE_A_CADA_MS = 5 * 60 * 1000;
+
+async function analiseDoMomento(s) {
+    const salva = (await dbOw.ref('analise_atual').once('value')).val();
+    if (salva?.texto && salva.calculadoEm && Date.now() - salva.calculadoEm < ANALISE_A_CADA_MS) {
+        return { ...salva, status: s.status, atualizadoEm: s.atualizadoEm };
+    }
+    const snap = await dbOw.ref('historico').limitToLast(220).once('value');
+    const passado = leituraDeHa(Object.values(snap.val() ?? {}), JANELA_TENDENCIA_H, Date.parse(s.atualizadoEm) || Date.now());
+    const { texto, estado } = analisar(s, passado, salva?.estado);
+    return { texto, estado, status: s.status, atualizadoEm: s.atualizadoEm, calculadoEm: Date.now() };
 }
 
 // ---------- Coletor: estação + OpenWeather -> análise -> salva no banco dados-openweather ----------
@@ -96,19 +149,23 @@ export async function coletar() {
 
     const anterior = await ultimaDoHistorico();
 
-    analiseAtual = { texto: analisar(s, anterior), status: s.status, atualizadoEm: s.atualizadoEm };
-
     // Dado velho não vai para o histórico (senão repete a mesma leitura a cada ciclo)
-    if (s.status === 'ultimo') return console.log('Estação sem dados recentes, nada salvo.');
+    if (s.status === 'ultimo') {
+        analiseAtual = { texto: 'Estação sem dados recentes: análise indisponível.', status: s.status, atualizadoEm: s.atualizadoEm };
+        return console.log('Estação sem dados recentes, nada salvo.');
+    }
     // Mesma medição já salva (a estação ainda não enviou nada novo)
     if (anterior?.atualizadoEm && anterior.atualizadoEm === s.atualizadoEm) return console.log('Medição já salva, nada novo.');
 
+    analiseAtual = await analiseDoMomento(s);
+
     // A OpenWeather só é consultada quando há medição nova para salvar (poupa a cota da API)
-    try { oficialAtual = await lerOpenWeather() ?? oficialAtual; } catch (e) { console.error(e.message); }
+    // Se a consulta falhar, a OpenWeather fica null (nunca reaproveita o valor antigo); a leitura da estação é salva igual
+    try { oficialAtual = await lerOpenWeather(); } catch (e) { oficialAtual = null; console.error(e.message); }
     const ow = oficialAtual;
     const leitura = {
         timestamp: Date.now(), ...s,
-        owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressaoMar ?? null, owPressaoSolo: ow?.pressao ?? null, owVento: ow?.vento ?? null, owCondicao: ow?.condicao ?? null,
+        owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressaoMar ?? null, owPressaoSolo: ow?.pressao ?? null, owVento: ow?.vento ?? null, owCondicao: ow?.condicao ?? null, owMedidoEm: ow?.medidoEm ?? null,
     };
     await dbOw.ref('historico').push(leitura);
     await dbOw.ref('analise_atual').set(analiseAtual);

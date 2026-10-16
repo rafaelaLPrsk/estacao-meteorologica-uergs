@@ -137,9 +137,38 @@ Abra `https://SEU-SERVICO.onrender.com/api/sensores`. Deve aparecer um JSON com 
 O workflow `.github/workflows/pages.yml` publica o `frontend/` a cada push na `main`. Para funcionar, quem é administradora do repositório precisa ir em **Settings → Pages → Source** e escolher **GitHub Actions** (a opção "Deploy from a branch" publica a branch `gh-pages`, que não é atualizada pelo workflow). Link: `https://rafaelalprsk.github.io/estacao-meteorologica-uergs/`. O repositório precisa ser público no plano grátis.
 
 ## Campos do histórico (`dados-openweather/historico`)
-Cada leitura salva tem: `timestamp` (hora da coleta), `atualizadoEm` (hora da medição na estação), `status`, os sensores (`temperatura`, `umidade`, `pressao`, `chuva`, `uv`, `luminosidade`, `ventoVelocidade`, `ventoDirecao`) e a OpenWeather (`owTemp`, `owUmidade`, `owVento`, `owCondicao`).
+Cada leitura salva tem: `timestamp` (hora da coleta), `atualizadoEm` (hora da medição na estação), `status`, os sensores (`temperatura`, `umidade`, `pressao`, `chuva`, `uv`, `luminosidade`, `ventoVelocidade`, `ventoDirecao`) e a OpenWeather (`owTemp`, `owUmidade`, `owVento`, `owCondicao`, `owMedidoEm`). `owMedidoEm` é a hora (em milissegundos) em que a **própria OpenWeather** mediu o dado, diferente do `timestamp` (hora em que nós consultamos). Serve para descartar pares estação × OpenWeather com diferença de tempo grande; só existe de 16/10/2026 em diante. Se a consulta à OpenWeather falhar, os campos `ow*` ficam `null` (nunca se repete um valor antigo), e os da estação são salvos normalmente.
 
 **Pressão da OpenWeather (atenção ao comparar):**
 - `pressao` é a da **nossa estação**, medida no local (hPa).
 - `owPressaoSolo` é a da OpenWeather **no nível do solo** (`grnd_level`). **É a comparável** com o sensor, e a que o Comparativo usa.
 - `owPressao` é a da OpenWeather **reduzida ao nível do mar** (`sea_level`). Fica ~3 hPa acima da medida no local, então **não deve ser usada** para validar o sensor. Leituras anteriores a 16/10/2026 só têm este campo (sem `owPressaoSolo`).
+
+## Atraso dos dados no site
+- O site **sempre mostra o último valor conhecido e a hora da medição**, nunca `--` por falta de atualização. No Comparativo, cada lado usa o último registro completo (estação e OpenWeather têm a sua própria hora).
+- **Até 5 min de atraso é tolerável** (sem aviso). Acima disso aparece "⚠ Atrasado há X min", no topo da aba Agora e nos cards do Comparativo. O limite fica em `frontend/src/tempo.js`.
+- Se a consulta à OpenWeather falhar, a tela mostra o último valor dela com o aviso de quanto tempo faz.
+- `--` só aparece quando o valor da estação é fisicamente impossível (fora da faixa de `LIMITES`) ou quando nunca houve dado.
+- A OpenWeather atualiza em ritmo próprio (cerca de 10 min), então o aviso dela pode aparecer com frequência, mesmo com a coleta funcionando.
+
+## Como a frase de análise é gerada (`analisar` em `backend/src/clima.js`)
+A frase usa a **tendência de ~3 horas**, não duas leituras seguidas. A pressão oscila ±0,1 hPa por ruído do sensor, e comparar leituras vizinhas fazia a frase trocar a cada coleta. A comparação é com a leitura mais próxima de 3 h atrás (aceita 2h15 a 3h45); sem histórico suficiente, não há tendência e a frase fica em "Tempo estável" (nas primeiras ~3 h de coleta).
+
+Regras, em ordem de prioridade:
+
+| # | Condição | Frase |
+|---|---|---|
+| 1 | chuva > 0 | Chuva em andamento |
+| 2 | vento > 40 km/h | Ventos fortes |
+| 3 | pressão caiu ≥ 3 hPa em 3 h | Queda rápida: risco de tempestade |
+| 4 | pressão em queda **e** umidade alta | Possibilidade de chuva |
+| 5 | pressão em queda | Tempo tende a ficar instável |
+| 6 | temperatura subiu ≥ 3 °C em 3 h | Temperatura subindo rapidamente |
+| 7 | temperatura caiu ≥ 3 °C em 3 h | Temperatura caindo rapidamente |
+| 8 | umidade < 40% | Ar muito seco |
+| 9 | pressão subiu ≥ 1 hPa em 3 h | Pressão em alta |
+| 10 | nenhuma das anteriores | Tempo estável |
+
+**Histerese** (evita a frase piscar perto do limite): a pressão **entra** em "queda" com −1 hPa em 3 h e só **sai** em −0,5; a umidade fica "alta" acima de 80% e só deixa de ser alta em 77% ou menos. O estado é guardado em `analise_atual/estado`. Os limites ficam no topo da seção, em constantes.
+
+A análise é recalculada a cada 5 min (lê ~3 h de histórico). Ela é só o texto do painel e **não entra nos dados do artigo**.

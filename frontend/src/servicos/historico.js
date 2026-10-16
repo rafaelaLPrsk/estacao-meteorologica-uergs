@@ -77,22 +77,25 @@ export async function buscarComparativo() {
         const l = serie(leituras, local), o = serie(leituras, oficial);
         return l && o ? { local: l, oficial: o } : null;
     };
-    const ultima = leituras.at(-1);
-    // Os dois lados vêm do MESMO registro salvo, então são da mesma hora (comparação justa).
-    const idadeMin = ultima ? (Date.now() - Date.parse(ultima.atualizadoEm)) / 60000 : null;
+    // Cada lado usa o último registro COMPLETO (sem campo null), com a sua própria hora.
+    // Se a coleta atrasou ou a OpenWeather falhou, aparece o último valor conhecido e a tela avisa o atraso.
+    const recentes = [...leituras].reverse();
+    const lc = recentes.find((l) => ['temperatura', 'umidade', 'pressao', 'ventoVelocidade'].every((c) => typeof l[c] === 'number'));
+    const oc = recentes.find((l) => ['owTemp', 'owUmidade', 'owVento'].every((c) => typeof l[c] === 'number')
+        && (typeof l.owPressaoSolo === 'number' || typeof l.owPressao === 'number'));
+    const idadeMin = lc ? (Date.now() - Date.parse(lc.atualizadoEm)) / 60000 : null;
     return {
-        local: ultima && {
-            temp: ultima.temperatura ?? null, umidade: ultima.umidade ?? null, pressao: ultima.pressao ?? null,
-            vento: ultima.ventoVelocidade ?? null,
+        local: lc && {
+            temp: lc.temperatura, umidade: lc.umidade, pressao: lc.pressao, vento: lc.ventoVelocidade,
             status: !Number.isFinite(idadeMin) ? 'desconhecido' : idadeMin <= 15 ? 'agora' : 'ultimo',
-            atualizadoEm: ultima.atualizadoEm,
+            atualizadoEm: lc.atualizadoEm,
         },
-        // OpenWeather da mesma coleta. Pressão: nível do solo (owPressaoSolo), comparável ao sensor;
-        // owPressao (nível do mar) é de antes de 16/10 e fica só como referência.
-        oficial: ultima && ultima.owTemp != null
+        // Pressão: nível do solo (owPressaoSolo), comparável ao sensor; owPressao (nível do mar) é de antes de 16/10.
+        oficial: oc
             ? {
-                temp: ultima.owTemp, umidade: ultima.owUmidade, pressao: ultima.owPressaoSolo ?? ultima.owPressao,
-                vento: ultima.owVento, condicao: ultima.owCondicao ?? null, coletadoEm: ultima.timestamp,
+                temp: oc.owTemp, umidade: oc.owUmidade, pressao: oc.owPressaoSolo ?? oc.owPressao,
+                vento: oc.owVento, condicao: oc.owCondicao ?? null, coletadoEm: oc.timestamp,
+                medidoEm: oc.owMedidoEm ?? null, // hora em que a própria OpenWeather mediu (só de 16/10 em diante)
             }
             : null,
         series: { temp: par('temperatura', 'owTemp'), umidade: par('umidade', 'owUmidade'), pressao: par('pressao', 'owPressaoSolo') },

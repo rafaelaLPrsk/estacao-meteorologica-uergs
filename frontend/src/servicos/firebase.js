@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, query, limitToLast, onValue, get } from 'firebase/database';
+import { minutosDesde } from '../tempo';
 
 // Banco da estação (tempo-uergs): configuração pública, leitura direta pelo navegador (sem backend).
 const app = initializeApp({
@@ -41,6 +42,7 @@ export function interpretarLeitura(s, agora = Date.now()) {
         ventoVelocidade: pega('ventoVelocidade', s?.vento?.velocidade),
         ventoDirecao: s?.vento?.direcao?.valor ?? null,
         atualizadoEm: ultimo ? new Date(ultimo).toISOString() : null,
+        atrasoMin: minutosDesde(ultimo, agora), // minutos desde a medição da estação
         // 'agora' = dado recente | 'ultimo' = último registro conhecido | 'desconhecido' = sem horário
         status: !ultimo ? 'desconhecido' : agora - ultimo <= ATUAL_ATE_MS ? 'agora' : 'ultimo',
     };
