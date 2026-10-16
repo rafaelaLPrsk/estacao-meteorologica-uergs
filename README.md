@@ -15,6 +15,37 @@ backend/    Node + Express (lê o Firebase, consulta a OpenWeather, analisa e sa
 
 Enquanto não houver histórico salvo, as telas de gráficos usam dados de exemplo (`frontend/src/dadosExemplo.js`).
 
+## Arquivos
+
+**Resumo rápido:** quem **lê/envia** dados está em `backend/src/`; quem **analisa** também (`clima.js`); quem **mostra** está em `frontend/src/`.
+
+### Backend (`backend/`)
+| Arquivo | O que faz |
+|---|---|
+| `src/server.js` | Sobe o Express (porta 3001), define as rotas `/api/*` e inicia o coletor. |
+| `src/clima.js` | **Principal.** Lê os sensores, valida faixas (`LIMITES`), consulta a OpenWeather, **gera a análise (frase do clima)** (`analisar`), **envia/salva** no banco (`coletar`) e monta o histórico e o comparativo. |
+| `src/firebase.js` | Conexões com os dois Firebase: `tempo-uergs` (estação, só leitura) e `dados-openweather` (histórico, leitura e escrita). |
+| `src/chave.json` | Chave da conta de serviço do `dados-openweather`. **Secreta, não vai para o git.** |
+| `.env` / `.env.example` | Configurações: `OPENWEATHER_KEY`, cidade, ID da estação, intervalo de coleta. |
+
+Rotas da API:
+- `GET /api/sensores` – leitura atual da estação
+- `GET /api/analise` – texto de análise do momento
+- `GET /api/historico` – 7 dias, hora a hora
+- `GET /api/comparativo` – estação x OpenWeather
+
+### Frontend (`frontend/src/`)
+| Pasta/arquivo | O que faz |
+|---|---|
+| `main.jsx`, `App.jsx` | Entrada do React e troca de abas (Agora, Histórico, Comparativo, Sobre, Contato). |
+| `servicos/api.js` | **Único lugar que chama o backend** (`fetch` das rotas `/api`). |
+| `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores`, `useAnalise`, `useHistorico`, `useComparativo`. |
+| `componentes/` | Telas e blocos visuais, cada um com seu `.css`: `MenuTopo`, `PainelClima`, `CardSensores`, `PaginaHistorico`, `PaginaComparativo`, `SeletorDia`, `PaginaSobre`, `PaginaContato`. |
+| `dadosExemplo.js` | Dados falsos usados enquanto não há histórico real. |
+| `assets/` | Logos e ícones dos sensores. |
+| `../vite.config.js` | Redireciona `/api` para o backend (`localhost:3001`) em desenvolvimento. |
+
+
 ## Rodar
 Coloque a chave da conta de serviço do `dados-openweather` em `backend/src/chave.json` (não vai para o git).
 
