@@ -134,3 +134,16 @@
     font-weight: 800;
     color: var(--primaria);
 }
+
+
+@media (max-width: 900px) {
+    .painel-clima-wrapper { padding: 20px 16px 10px; }
+    .dados-principais { flex-wrap: wrap; gap: 20px 28px; }
+    .diagnostico { margin-left: 0; width: 100%; }
+}
+
+@media (max-width: 600px) {
+    .valor-temperatura, .valor-chuva { font-size: 40px; }
+    .valor-temperatura small, .valor-chuva small { font-size: 18px; }
+    .icone-grande { width: 44px; height: 44px; }
+}

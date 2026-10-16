@@ -50,3 +50,14 @@
 .icone-luz {
     transform: scale(0.6);
 }
+
+@media (max-width: 900px) {
+    .card-container { padding: 16px; }
+    .grid-sensores { grid-template-columns: repeat(2, 1fr); padding: 24px; gap: 24px 20px; border-radius: 24px; }
+}
+
+@media (max-width: 600px) {
+    .grid-sensores { grid-template-columns: 1fr; padding: 20px; }
+    .icone-sensor { width: 56px; height: 56px; }
+    .sensor-item { gap: 14px; }
+}
