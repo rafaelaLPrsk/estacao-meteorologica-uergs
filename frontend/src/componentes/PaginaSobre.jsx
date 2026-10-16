@@ -21,8 +21,8 @@ function PaginaSobre({ voltar }) {
                 <div className="texto-sobre">
                     <h2>Sobre o projeto</h2>
                     <p>
-                        O Tempo UERGS é um projeto de iniciação científica que observa e registra as condições do tempo 
-                        inicialmente no bairro Jardim dos Lagos, em Guaíba-RS, com medições de temperatura, umidade, pressão, vento,
+                        O Tempo UERGS é um projeto que observa e registra as condições do tempo.
+                        Inicialmente coleta dados no bairro Jardim dos Lagos, em Guaíba-RS, com medições de temperatura, umidade, pressão, vento,
                         chuva, radiação UV e luminosidade.
                     </p>
                     <p>
