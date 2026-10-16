@@ -89,6 +89,15 @@ gh secret set OPENWEATHER_KEY
 ```
 Depois, em **Actions → Coletar dados da estação → Run workflow** para testar. As execuções seguintes são automáticas.
 
+### Como a coleta se mantém rodando
+O agendamento (`cron`) do GitHub é pouco confiável: pode atrasar ou nem disparar. Por isso o workflow **encadeia**: ao terminar, cada execução dispara a próxima (`gh workflow run`), e o `cron` fica só como reserva para religar a corrente se ela quebrar. Se a coleta falhar, ele espera 2 min antes de disparar a próxima (evita um laço rápido de falhas). Duas execuções nunca rodam juntas (`concurrency`).
+
+**Como conferir que continua rodando:**
+- `gh run list --workflow=coletar.yml --limit 5`: deve haver sempre uma `in_progress` ou uma recém-concluída.
+- No site, o aviso "⚠ Atrasado há X min" (Comparativo e aba Agora) aparece se o histórico parar de ser salvo.
+- Se a corrente quebrar e o `cron` não religar: `gh workflow run coletar.yml` inicia de novo.
+- **Para parar a coleta** de propósito, desative o workflow em Actions (senão uma execução dispara a próxima).
+
 ### Limites (citar na metodologia do artigo)
 - O agendamento do GitHub **atrasa e às vezes pula execuções**. Quando isso acontece, o histórico do `dados-openweather` fica com buraco naquele período. As leituras da estação **não se perdem**: o Firebase `tempo-uergs` guarda todas (`estacao/ESTACAO_001/leituras`, desde 05/10/2026), então dá para preencher os buracos depois. Só o valor da OpenWeather daquele momento não é recuperável (a API gratuita não dá histórico). Como cada execução dura ~4,5 min e o disparo é de 5 em 5, a cobertura costuma ser quase contínua, mas pode haver buracos. Cada leitura guarda o horário real da medição (`atualizadoEm`) e o da coleta (`timestamp`).
 - Se o repositório ficar **60 dias sem nenhuma atividade** (commits), o GitHub desativa o agendamento. Basta reativar em Actions.

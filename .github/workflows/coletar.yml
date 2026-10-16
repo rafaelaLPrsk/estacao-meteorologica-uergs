@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write   # para disparar a próxima execução
 
 jobs:
   coletar:
@@ -29,7 +30,19 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       # Fica ~4,5 min verificando a cada 30 s: salva toda medição nova da estação (uma a cada ~72 s)
-      - run: npm run coletar -- --duracao 270 --intervalo 30
+      - id: coleta
+        run: npm run coletar -- --duracao 270 --intervalo 30
         env:
           FIREBASE_CHAVE_JSON: ${{ secrets.FIREBASE_CHAVE_JSON }}
           OPENWEATHER_KEY: ${{ secrets.OPENWEATHER_KEY }}
+
+      # Encadeia: ao terminar, dispara a próxima execução. Assim a coleta continua mesmo que o agendamento (cron)
+      # do GitHub atrase ou pule; o cron fica só como reserva para religar a corrente se ela quebrar.
+      # Se a coleta falhou, espera 2 min antes (evita um laço rápido de falhas).
+      - name: Disparar a próxima execução
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ steps.coleta.outcome }}" != "success" ]; then sleep 120; fi
+          gh workflow run coletar.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
