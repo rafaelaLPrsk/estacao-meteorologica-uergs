@@ -7,3 +7,6 @@
   --superficie: #EEF4FF;
 }
 body { font-family: sans-serif; color: var(--primaria); }
+
+html, body { overflow-x: hidden; }
+img, svg { max-width: 100%; }
