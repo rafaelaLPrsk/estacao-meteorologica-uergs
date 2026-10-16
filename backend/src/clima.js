@@ -80,26 +80,33 @@ function analisar(a, anterior) {
 }
 
 // ---------- Coletor: estação + OpenWeather -> análise -> salva no banco dados-openweather ----------
-let ultimaLeitura = null;
 export let analiseAtual = { texto: null, status: 'desconhecido', atualizadoEm: null };
 
-async function coletar() {
+// Última leitura salva no histórico (o coletor não guarda estado: roda no servidor ou, avulso, no GitHub Actions)
+async function ultimaDoHistorico() {
+    const snap = await dbOw.ref('historico').limitToLast(1).once('value');
+    return Object.values(snap.val() ?? {})[0] ?? null;
+}
+
+export async function coletar() {
     const s = await lerSensores();
     if (!s) return;
 
+    const anterior = await ultimaDoHistorico();
     try { oficialAtual = await lerOpenWeather() ?? oficialAtual; } catch (e) { console.error(e.message); }
 
-    analiseAtual = { texto: analisar(s, ultimaLeitura), status: s.status, atualizadoEm: s.atualizadoEm };
+    analiseAtual = { texto: analisar(s, anterior), status: s.status, atualizadoEm: s.atualizadoEm };
 
     // Dado velho não vai para o histórico (senão repete a mesma leitura a cada ciclo)
     if (s.status === 'ultimo') return console.log('Estação sem dados recentes, nada salvo.');
+    // Mesma medição já salva (a estação ainda não enviou nada novo)
+    if (anterior?.atualizadoEm && anterior.atualizadoEm === s.atualizadoEm) return console.log('Medição já salva, nada novo.');
 
     const ow = oficialAtual;
     const leitura = {
         timestamp: Date.now(), ...s,
         owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressao ?? null, owVento: ow?.vento ?? null,
     };
-    ultimaLeitura = leitura;
     await dbOw.ref('historico').push(leitura);
     await dbOw.ref('analise_atual').set(analiseAtual);
     console.log(`📊 ${analiseAtual.texto}`);

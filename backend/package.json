@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --watch src/server.js",
-    "start": "node --env-file-if-exists=.env src/server.js"
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "coletar": "node --env-file-if-exists=.env src/coletar.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
