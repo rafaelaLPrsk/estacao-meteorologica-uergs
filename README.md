@@ -1,169 +1,61 @@
 # Estação Meteorológica UERGS
 
-Painel web da estação de Guaíba, comparando os sensores com a OpenWeather.
+Painel web da estação meteorológica de baixo custo da UERGS Guaíba, que compara as medições do sensor com uma fonte de referência (OpenWeather).
+
+Site: https://rafaelalprsk.github.io/estacao-meteorologica-uergs/
 
 ```
-frontend/   React + Vite (telas)
-backend/    Node + Express (lê o Firebase, consulta a OpenWeather, analisa e salva)
+frontend/   React + Vite (as telas; lê os dados direto do Firebase)
+backend/    Node (coleta: lê a estação, consulta a OpenWeather, analisa e salva)
+.github/    Workflows: coleta contínua e publicação do site
 ```
 
-## Fluxo
-1. O ESP32 grava as leituras no Firebase `tempo-uergs` (`estacao/ESTACAO_001`).
-2. A cada 5 min o backend lê a estação, descarta valores fora da faixa real, consulta a OpenWeather e gera a análise do momento.
-3. Se os dados da estação são recentes (≤ 15 min), salva a leitura no banco `dados-openweather` (`historico` e `analise_atual`).
-4. O frontend **não precisa do backend**: lê os sensores do Firebase `tempo-uergs` e a análise e o histórico do `dados-openweather` (leitura pública), e calcula os gráficos de Histórico e Comparativo no próprio navegador (`frontend/src/servicos/`).
+## Interface
 
-> A coleta (passo 2 e 3) pode rodar de três formas: `npm run dev` no backend (servidor), GitHub Actions (`.github/workflows/coletar.yml`, grátis) ou um servidor hospedado. O backend e as rotas `/api` continuam existindo, mas o site publicado não depende delas.
+A interface web mostra, em tempo real e no histórico, os dados da estação, e os compara com a OpenWeather. É construída com React e Vite, hospedada gratuitamente no GitHub Pages e tem layout responsivo (computador e celular). Não depende de servidor próprio: lê os dados diretamente dos bancos e calcula os gráficos no navegador.
 
-O site mostra **somente dados reais do nosso banco**. Onde ainda não há dados (dias sem coleta completa, séries sem leituras), as telas dizem "sem dados"; não existe dado de exemplo. Um dia do Histórico só aparece quando tem temperatura, umidade, pressão, chuva e vento.
+### Telas
+- **Agora:** leituras mais recentes da estação, em tempo real, e um diagnóstico atmosférico em texto.
+- **Histórico:** últimos 7 dias, com resumos e gráficos de temperatura (máxima e mínima), umidade, pressão, chuva e vento, por dia ou hora a hora. Só aparecem dias com dados reais e completos.
+- **Comparativo:** estação x OpenWeather em temperatura, umidade, pressão e vento. Mostra os desvios (estação menos referência), o desvio padrão, um gráfico das últimas 12 horas e a discrepância por faixa horária, com taxa de acerto dentro de uma tolerância e correlação de Pearson.
+- **Sobre** e **Contato:** o projeto, a equipe e a instituição.
 
-## Arquivos
+### Tratamento da qualidade dos dados
+- **Validação física:** valores fora de faixas plausíveis (constante `LIMITES` em `backend/src/clima.js` e `frontend/src/servicos/firebase.js`) são descartados.
+- **Pressão comparável:** o sensor mede a pressão no local, em Pascal, convertida para hPa. A comparação usa a pressão ao **nível do solo** da OpenWeather (`owPressaoSolo`), não a reduzida ao nível do mar (`owPressao`), que fica ~3 hPa acima.
+- **Mesmo instante:** os dois lados do Comparativo vêm do **mesmo registro salvo**, e a defasagem entre as medições é informada na tela.
+- **Atraso:** o site sempre mostra o último valor conhecido e a hora da medição. **Até 5 min de atraso é tolerável**; acima disso aparece "⚠ Atrasado há X min" (aba Agora e Comparativo). O limite está em `frontend/src/tempo.js`. A OpenWeather atualiza em ritmo próprio (~10 min), então o aviso dela pode aparecer mesmo com a coleta funcionando.
+- **Sem dado inventado:** não existe dado de exemplo. Onde não há dados, a tela diz "sem dados". `--` só aparece quando o valor é fisicamente impossível ou nunca houve dado.
+- **Diagnóstico por tendência:** a frase usa a variação das últimas ~3 h, não leituras consecutivas, com histerese (ver "Frase de análise").
 
-**Resumo rápido:** quem **lê/envia** dados está em `backend/src/`; quem **analisa** também (`clima.js`); quem **mostra** está em `frontend/src/`.
-
-### Backend (`backend/`)
-| Arquivo | O que faz |
-|---|---|
-| `src/server.js` | Sobe o Express (porta 3001), define as rotas `/api/*` e inicia o coletor. |
-| `src/clima.js` | **Principal.** Lê os sensores, valida faixas (`LIMITES`), consulta a OpenWeather, **gera a análise (frase do clima)** (`analisar`), **envia/salva** no banco (`coletar`) e monta o histórico e o comparativo. |
-| `src/firebase.js` | Conexões com os dois Firebase: `tempo-uergs` (estação, só leitura) e `dados-openweather` (histórico, leitura e escrita). |
-| `src/chave.json` | Chave da conta de serviço do `dados-openweather`. **Secreta, não vai para o git.** |
-| `.env` / `.env.example` | Configurações: `OPENWEATHER_KEY`, cidade, ID da estação, intervalo de coleta. |
-
-Rotas da API:
-- `GET /api/sensores` – leitura atual da estação
-- `GET /api/analise` – texto de análise do momento
-- `GET /api/historico` – 7 dias, hora a hora
-- `GET /api/comparativo` – estação x OpenWeather
-
-### Frontend (`frontend/src/`)
-| Pasta/arquivo | O que faz |
-|---|---|
-| `main.jsx`, `App.jsx` | Entrada do React e troca de abas (Agora, Histórico, Comparativo, Sobre, Contato). |
-| `servicos/api.js` | Chama as rotas `/api` do backend. Hoje o site não usa (ficou como alternativa). |
-| `servicos/firebase.js` | **Lê direto do Firebase, sem backend:** sensores em tempo real (`tempo-uergs`) e histórico/análise (`dados-openweather`). Valida as faixas e converte a pressão de Pa para hPa. |
-| `servicos/historico.js` | **Calcula os gráficos** de Histórico (7 dias, hora a hora) e Comparativo (estação x OpenWeather) a partir das leituras salvas. |
-| `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores`, `useAnalise`, `useHistorico`, `useComparativo` (todos leem do Firebase). |
-| `componentes/` | Telas e blocos visuais, cada um com seu `.css`: `MenuTopo`, `PainelClima`, `CardSensores`, `PaginaHistorico`, `PaginaComparativo`, `SeletorDia`, `PaginaSobre`, `PaginaContato`. |
-| `dias.js` | Só os rótulos dos últimos 7 dias (datas), sem nenhum dado de medição. |
-| `assets/` | Logos e ícones dos sensores. |
-| `../vite.config.js` | Redireciona `/api` para o backend (`localhost:3001`) em desenvolvimento. |
-
-
-## Rodar
-Coloque a chave da conta de serviço do `dados-openweather` em `backend/src/chave.json` (não vai para o git).
+## Como funciona
 
 ```
-cd backend  && cp .env.example .env   # preencher OPENWEATHER_KEY
-npm install && npm run dev            # porta 3001
-cd frontend && npm install && npm run dev
+ESP32 -> Firebase "tempo-uergs"  (uma leitura a cada ~72 s)
+              |
+   GitHub Actions roda backend/src/coletar.js
+   (valida, consulta a OpenWeather, analisa)
+              |
+              v
+Firebase "dados-openweather"  (historico + analise_atual)
+              |
+              v
+   Site (GitHub Pages) lê os dois bancos e desenha as telas
 ```
 
-## Publicar o frontend na Vercel (grátis)
+1. O ESP32 grava as leituras no Firebase `tempo-uergs` (`estacao/ESTACAO_001/leituras`). Esse banco guarda **todas** as leituras (desde 05/10/2026).
+2. A coleta lê a última medição e só segue se ela for **nova** e **recente** (≤ 15 min). Então consulta a OpenWeather e grava tudo junto em `dados-openweather/historico`, mais a frase em `analise_atual`. A OpenWeather só é consultada quando há medição nova a salvar.
+3. O site lê os sensores do `tempo-uergs` e o histórico e a análise do `dados-openweather` (leitura pública) e calcula os gráficos no navegador (`frontend/src/servicos/`).
 
-1. Entre em [vercel.com](https://vercel.com) com a conta do GitHub e clique em **Add New → Project**.
-2. Importe o repositório `estacao-meteorologica-uergs`.
-3. Em **Root Directory**, escolha `frontend`. O restante é detectado sozinho (Framework: Vite, build `npm run build`, saída `dist`).
-4. Clique em **Deploy**. Você recebe um link `https://....vercel.app` que abre no celular.
+### Campos do histórico (`dados-openweather/historico`)
+- **Tempo:** `timestamp` (hora da coleta), `atualizadoEm` (hora da medição na estação), `status`.
+- **Estação:** `temperatura`, `umidade`, `pressao`, `chuva`, `uv`, `luminosidade`, `ventoVelocidade`, `ventoDirecao`.
+- **OpenWeather:** `owTemp`, `owUmidade`, `owPressaoSolo` (comparável com `pressao`), `owPressao` (nível do mar, só referência), `owVento`, `owCondicao`, `owMedidoEm`.
+- `owMedidoEm` é a hora em que a **própria OpenWeather** mediu o dado (ms), diferente do `timestamp`. Serve para descartar pares com diferença de tempo grande. Só existe de 16/10/2026 em diante, assim como `owPressaoSolo`.
+- Se a consulta à OpenWeather falhar, os campos `ow*` ficam `null` (nunca se repete um valor antigo) e os da estação são salvos normalmente.
 
-A cada push, a Vercel publica de novo. Branches e Pull Requests ganham um link de prévia próprio, útil para testar o layout no celular antes de ir para a `main`.
-
-**Não precisa de backend:** o site lê tudo direto do Firebase (sensores e histórico), então basta publicar o frontend. A coleta que alimenta o histórico roda à parte, no GitHub Actions (seção "Coleta 24h grátis com GitHub Actions").
-
-## Coleta 24h grátis com GitHub Actions
-
-Sem servidor e sem plano pago: o workflow `.github/workflows/coletar.yml` é disparado pelo GitHub a cada 5 min (o mínimo que o agendamento permite). Cada execução fica ativa por ~4,5 min e **verifica a estação a cada 30 s**, salvando toda medição nova no Firebase (`dados-openweather`) junto com a OpenWeather. Como a estação envia uma leitura a cada ~72 s, o histórico fica com uma leitura por medição, sem repetir. Quem faz isso é `backend/src/coletar.js` (`node src/coletar.js --duracao 270 --intervalo 30`; sem argumentos faz uma coleta só), usando o mesmo `coletar()` de `clima.js` que o servidor usa.
-
-### Configurar (uma vez, por quem é administradora do repositório)
-No GitHub: **Settings → Secrets and variables → Actions → Secrets → New repository secret**:
-
-| Secret | Valor |
-|---|---|
-| `FIREBASE_CHAVE_JSON` | saída de `base64 -w0 backend/src/chave.json` |
-| `OPENWEATHER_KEY` | a chave da OpenWeather (a do `backend/.env`) |
-
-Com a GitHub CLI, na raiz do projeto, dá para cadastrar assim:
-```
-base64 -w0 backend/src/chave.json | gh secret set FIREBASE_CHAVE_JSON
-gh secret set OPENWEATHER_KEY
-```
-Depois, em **Actions → Coletar dados da estação → Run workflow** para testar. As execuções seguintes são automáticas.
-
-### Como a coleta se mantém rodando
-O agendamento (`cron`) do GitHub é pouco confiável: pode atrasar ou nem disparar. Por isso o workflow **encadeia**: ao terminar, cada execução dispara a próxima (`gh workflow run`), e o `cron` fica só como reserva para religar a corrente se ela quebrar. Se a coleta falhar, ele espera 2 min antes de disparar a próxima (evita um laço rápido de falhas). Duas execuções nunca rodam juntas (`concurrency`).
-
-**Como conferir que continua rodando:**
-- `gh run list --workflow=coletar.yml --limit 5`: deve haver sempre uma `in_progress` ou uma recém-concluída.
-- No site, o aviso "⚠ Atrasado há X min" (Comparativo e aba Agora) aparece se o histórico parar de ser salvo.
-- Se a corrente quebrar e o `cron` não religar: `gh workflow run coletar.yml` inicia de novo.
-- **Para parar a coleta** de propósito, desative o workflow em Actions (senão uma execução dispara a próxima).
-
-### Limites (citar na metodologia do artigo)
-- O agendamento do GitHub **atrasa e às vezes pula execuções**. Quando isso acontece, o histórico do `dados-openweather` fica com buraco naquele período. As leituras da estação **não se perdem**: o Firebase `tempo-uergs` guarda todas (`estacao/ESTACAO_001/leituras`, desde 05/10/2026), então dá para preencher os buracos depois. Só o valor da OpenWeather daquele momento não é recuperável (a API gratuita não dá histórico). Como cada execução dura ~4,5 min e o disparo é de 5 em 5, a cobertura costuma ser quase contínua, mas pode haver buracos. Cada leitura guarda o horário real da medição (`atualizadoEm`) e o da coleta (`timestamp`).
-- Se o repositório ficar **60 dias sem nenhuma atividade** (commits), o GitHub desativa o agendamento. Basta reativar em Actions.
-- O repositório precisa ser **público** para os minutos serem ilimitados.
-- Só roda na branch `main`. Para parar a coleta, desative o workflow em Actions.
-- **Não rode o backend local e o Actions ao mesmo tempo sem necessidade**: o coletor ignora uma medição já salva, mas é melhor ter uma única fonte.
-- A coleta grava só se a estação enviou dado recente (até 15 min) e novo. Sem isso, nada é salvo e o log mostra o motivo.
-
-## Hospedar o backend na nuvem (alternativa paga: Render, Railway etc.)
-
-**Opcional.** Só serve se vocês preferirem um servidor ligado 24h no lugar do GitHub Actions para coletar (ele coleta e salva os dados a cada 5 min). O site **não** consulta o backend: lê direto do Firebase.
-
-O `firebase.js` já está preparado: na nuvem ele lê a chave da variável `FIREBASE_CHAVE_JSON`; no computador continua usando `src/chave.json`.
-
-### 1. Gerar o valor da chave
-No terminal, na pasta `backend/`:
-```
-base64 -w0 src/chave.json
-```
-Copie o texto gigante que aparecer (é o conteúdo do `chave.json` em base64). **Trate como senha**: não coloque no git, em print ou em chat.
-
-### 2. Criar o serviço (exemplo: Render)
-1. Em [render.com](https://render.com), **New → Web Service** e conecte este repositório.
-2. **Root Directory:** `backend`
-3. **Build Command:** `npm install`
-4. **Start Command:** `npm start`
-5. Em **Environment**, crie as variáveis:
-
-| Variável | Valor |
-|---|---|
-| `FIREBASE_CHAVE_JSON` | o texto base64 do passo 1 |
-| `OPENWEATHER_KEY` | a chave da OpenWeather |
-| `OPENWEATHER_CIDADE` | `Guaiba,BR` (opcional) |
-| `ESTACAO_ID` | `ESTACAO_001` (opcional) |
-| `INTERVALO_MIN` | `5` (opcional) |
-
-A porta é definida pelo próprio serviço (o código já lê `PORT`). No Railway os passos são os mesmos: Root Directory `backend` e as mesmas variáveis.
-
-**Plano grátis do Render:** o serviço "dorme" após ~15 min sem acesso, e **a coleta para junto**. Para coletar 24h, use um plano pago (~US$5/mês) ou mantenha acessos periódicos (ex.: UptimeRobot chamando `/api/sensores` a cada 5 min).
-
-### 3. Testar
-Abra `https://SEU-SERVICO.onrender.com/api/sensores`. Deve aparecer um JSON com temperatura, umidade etc.
-
-## Publicar o frontend no GitHub Pages
-
-O workflow `.github/workflows/pages.yml` publica o `frontend/` a cada push na `main`. Para funcionar, quem é administradora do repositório precisa ir em **Settings → Pages → Source** e escolher **GitHub Actions** (a opção "Deploy from a branch" publica a branch `gh-pages`, que não é atualizada pelo workflow). Link: `https://rafaelalprsk.github.io/estacao-meteorologica-uergs/`. O repositório precisa ser público no plano grátis.
-
-## Campos do histórico (`dados-openweather/historico`)
-Cada leitura salva tem: `timestamp` (hora da coleta), `atualizadoEm` (hora da medição na estação), `status`, os sensores (`temperatura`, `umidade`, `pressao`, `chuva`, `uv`, `luminosidade`, `ventoVelocidade`, `ventoDirecao`) e a OpenWeather (`owTemp`, `owUmidade`, `owVento`, `owCondicao`, `owMedidoEm`). `owMedidoEm` é a hora (em milissegundos) em que a **própria OpenWeather** mediu o dado, diferente do `timestamp` (hora em que nós consultamos). Serve para descartar pares estação × OpenWeather com diferença de tempo grande; só existe de 16/10/2026 em diante. Se a consulta à OpenWeather falhar, os campos `ow*` ficam `null` (nunca se repete um valor antigo), e os da estação são salvos normalmente.
-
-**Pressão da OpenWeather (atenção ao comparar):**
-- `pressao` é a da **nossa estação**, medida no local (hPa).
-- `owPressaoSolo` é a da OpenWeather **no nível do solo** (`grnd_level`). **É a comparável** com o sensor, e a que o Comparativo usa.
-- `owPressao` é a da OpenWeather **reduzida ao nível do mar** (`sea_level`). Fica ~3 hPa acima da medida no local, então **não deve ser usada** para validar o sensor. Leituras anteriores a 16/10/2026 só têm este campo (sem `owPressaoSolo`).
-
-## Atraso dos dados no site
-- O site **sempre mostra o último valor conhecido e a hora da medição**, nunca `--` por falta de atualização. No Comparativo, cada lado usa o último registro completo (estação e OpenWeather têm a sua própria hora).
-- **Até 5 min de atraso é tolerável** (sem aviso). Acima disso aparece "⚠ Atrasado há X min", no topo da aba Agora e nos cards do Comparativo. O limite fica em `frontend/src/tempo.js`.
-- Se a consulta à OpenWeather falhar, a tela mostra o último valor dela com o aviso de quanto tempo faz.
-- `--` só aparece quando o valor da estação é fisicamente impossível (fora da faixa de `LIMITES`) ou quando nunca houve dado.
-- A OpenWeather atualiza em ritmo próprio (cerca de 10 min), então o aviso dela pode aparecer com frequência, mesmo com a coleta funcionando.
-
-## Como a frase de análise é gerada (`analisar` em `backend/src/clima.js`)
-A frase usa a **tendência de ~3 horas**, não duas leituras seguidas. A pressão oscila ±0,1 hPa por ruído do sensor, e comparar leituras vizinhas fazia a frase trocar a cada coleta. A comparação é com a leitura mais próxima de 3 h atrás (aceita 2h15 a 3h45); sem histórico suficiente, não há tendência e a frase fica em "Tempo estável" (nas primeiras ~3 h de coleta).
-
-Regras, em ordem de prioridade:
+### Frase de análise (`analisar` em `backend/src/clima.js`)
+Usa a **tendência de ~3 horas** (comparação com a leitura mais próxima de 3 h atrás, aceitando 2h15 a 3h45). A pressão oscila ±0,1 hPa por ruído do sensor, e comparar leituras vizinhas fazia a frase trocar a cada coleta. Sem histórico suficiente (primeiras ~3 h), fica em "Tempo estável".
 
 | # | Condição | Frase |
 |---|---|---|
@@ -178,6 +70,66 @@ Regras, em ordem de prioridade:
 | 9 | pressão subiu ≥ 1 hPa em 3 h | Pressão em alta |
 | 10 | nenhuma das anteriores | Tempo estável |
 
-**Histerese** (evita a frase piscar perto do limite): a pressão **entra** em "queda" com −1 hPa em 3 h e só **sai** em −0,5; a umidade fica "alta" acima de 80% e só deixa de ser alta em 77% ou menos. O estado é guardado em `analise_atual/estado`. Os limites ficam no topo da seção, em constantes.
+**Histerese** (evita a frase piscar perto do limite): a pressão entra em "queda" com −1 hPa em 3 h e só sai em −0,5; a umidade fica "alta" acima de 80% e só deixa de ser alta em 77% ou menos. O estado fica em `analise_atual/estado`. A análise é recalculada a cada 5 min e é só o texto do painel: **não entra nos dados do artigo**.
 
-A análise é recalculada a cada 5 min (lê ~3 h de histórico). Ela é só o texto do painel e **não entra nos dados do artigo**.
+## Coleta contínua (GitHub Actions)
+
+O workflow `.github/workflows/coletar.yml` executa `backend/src/coletar.js` (`--duracao 270 --intervalo 30`): cada execução fica ~4,5 min verificando a estação a cada 30 s e salvando toda medição nova (a estação envia uma a cada ~72 s). Sem argumentos, `coletar.js` faz uma coleta só.
+
+**Como se mantém rodando:** o agendamento (`cron`, de 5 em 5 min) do GitHub atrasa e às vezes nem dispara. Por isso cada execução, ao terminar, **dispara a próxima** (`gh workflow run`), e o `cron` fica só como reserva para religar a corrente se ela quebrar. Se a coleta falhar, espera 2 min antes de disparar a próxima. Duas execuções nunca rodam juntas (`concurrency`).
+
+**Para conferir:**
+- `gh run list --workflow=coletar.yml --limit 5`: deve haver sempre uma execução `in_progress` ou recém-concluída.
+- O aviso "⚠ Atrasado há X min" do site aparece se o histórico parar de ser salvo.
+- Se a corrente quebrar e o `cron` não religar: `gh workflow run coletar.yml`.
+- **Para parar de propósito:** desative o workflow em Actions (cancelar uma execução não basta, ela já dispara a próxima).
+
+**Configuração existente** (Settings → Secrets and variables → Actions → Secrets): `FIREBASE_CHAVE_JSON` (conteúdo de `backend/src/chave.json` em base64: `base64 -w0 backend/src/chave.json`) e `OPENWEATHER_KEY`. Quem gerencia o repositório precisa de permissão de administrador para alterá-los.
+
+## Limitações (citar no artigo)
+- O agendamento do GitHub Actions é irregular, e a coleta pode ter **lacunas**. As leituras da estação **não se perdem** (o `tempo-uergs` guarda todas), então os buracos podem ser preenchidos depois. Só o valor da OpenWeather daquele momento não é recuperável (a API gratuita não dá histórico).
+- A OpenWeather dá uma **estimativa** por modelo e estações próximas, não uma medição no ponto, com umidade e pressão em valores inteiros. Os desvios são entre uma medição local e uma estimativa regional.
+- Leituras anteriores a 16/10/2026 não têm `owPressaoSolo` nem `owMedidoEm`, e o histórico antigo não tem pressão confiável.
+- Se o repositório ficar **60 dias sem commits**, o GitHub desativa o agendamento (basta reativar em Actions). Para os minutos serem ilimitados, o repositório precisa ser público.
+- Não rode o backend local e o Actions coletando ao mesmo tempo: gera registros duplicados.
+
+## Arquivos
+
+**Resumo rápido:** quem **lê e envia** dados está em `backend/src/`; quem **analisa** também (`clima.js`); quem **mostra** está em `frontend/src/`.
+
+### Backend (`backend/`)
+| Arquivo | O que faz |
+|---|---|
+| `src/clima.js` | **Principal.** Lê os sensores, valida faixas (`LIMITES`), consulta a OpenWeather, **gera a frase** (`analisar`) e **salva** no banco (`coletar`). |
+| `src/coletar.js` | Executa a coleta e termina (usado pelo GitHub Actions). |
+| `src/firebase.js` | Conexões com os dois Firebase: `tempo-uergs` (estação, só leitura) e `dados-openweather` (histórico, leitura e escrita). Lê a chave de `FIREBASE_CHAVE_JSON` ou, no computador, de `src/chave.json`. |
+| `src/chave.json` | Chave da conta de serviço do `dados-openweather`. **Secreta, não vai para o git.** |
+| `.env` / `.env.example` | `OPENWEATHER_KEY`, cidade, ID da estação, intervalo de coleta. |
+| `src/server.js` | Servidor opcional (porta 3001) com as rotas `/api/*` (`sensores`, `analise`, `historico`, `comparativo`) e coleta em intervalo. **O site não usa**; ficou como alternativa. |
+
+### Frontend (`frontend/src/`)
+| Pasta/arquivo | O que faz |
+|---|---|
+| `main.jsx`, `App.jsx` | Entrada do React e troca de abas. |
+| `servicos/firebase.js` | **Lê direto do Firebase:** sensores em tempo real (`tempo-uergs`) e histórico/análise (`dados-openweather`). Valida faixas e converte a pressão de Pa para hPa. |
+| `servicos/historico.js` | **Calcula os gráficos** de Histórico e Comparativo a partir das leituras salvas. |
+| `servicos/api.js` | Chama as rotas `/api` do servidor opcional. Não usado pelo site. |
+| `hooks/` | Buscam os dados e atualizam sozinhos: `useSensores`, `useAnalise`, `useHistorico`, `useComparativo`. |
+| `componentes/` | Telas e blocos visuais, cada um com seu `.css`: `MenuTopo`, `PainelClima`, `CardSensores`, `PaginaHistorico`, `PaginaComparativo`, `SeletorDia`, `PaginaSobre`, `PaginaContato`. |
+| `tempo.js` | Cálculo e formato do atraso dos dados (tolerância de 5 min). |
+| `dias.js` | Rótulos dos últimos 7 dias (só datas). |
+| `assets/` | Logos, ícones dos sensores e foto da estação. |
+
+## Rodar localmente
+Coloque a chave da conta de serviço do `dados-openweather` em `backend/src/chave.json`.
+
+```
+cd backend  && cp .env.example .env   # preencher OPENWEATHER_KEY
+npm install && npm run coletar        # uma coleta (grava no banco)
+cd frontend && npm install && npm run dev
+```
+
+O site não precisa do backend rodando. O `npm run dev` do backend sobe o servidor opcional e **coleta a cada 5 min**: use só para testar, e não junto com o Actions.
+
+## Publicação do site
+O workflow `.github/workflows/pages.yml` publica o `frontend/` no GitHub Pages a cada push na `main` (o Pages está configurado com a fonte "GitHub Actions").
