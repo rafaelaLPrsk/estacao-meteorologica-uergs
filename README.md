@@ -11,7 +11,9 @@ backend/    Node + Express (lê o Firebase, consulta a OpenWeather, analisa e sa
 1. O ESP32 grava as leituras no Firebase `tempo-uergs` (`estacao/ESTACAO_001`).
 2. A cada 5 min o backend lê a estação, descarta valores fora da faixa real, consulta a OpenWeather e gera a análise do momento.
 3. Se os dados da estação são recentes (≤ 15 min), salva a leitura no banco `dados-openweather` (`historico` e `analise_atual`).
-4. O frontend consulta o backend (`/api/sensores`, `/api/analise`, `/api/historico`, `/api/comparativo`) e monta cards e gráficos.
+4. O frontend lê os sensores (cards e painel "Agora") **direto do Firebase** e consulta o backend para `/api/analise`, `/api/historico` e `/api/comparativo`, montando cards e gráficos.
+
+> Por isso, no GitHub Pages os sensores aparecem mesmo sem backend hospedado. Análise, histórico e comparativo só funcionam com o backend no ar.
 
 Enquanto não houver histórico salvo, as telas de gráficos usam dados de exemplo (`frontend/src/dadosExemplo.js`).
 
@@ -38,8 +40,9 @@ Rotas da API:
 | Pasta/arquivo | O que faz |
 |---|---|
 | `main.jsx`, `App.jsx` | Entrada do React e troca de abas (Agora, Histórico, Comparativo, Sobre, Contato). |
-| `servicos/api.js` | **Único lugar que chama o backend** (`fetch` das rotas `/api`). |
-| `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores`, `useAnalise`, `useHistorico`, `useComparativo`. |
+| `servicos/api.js` | Chama o backend (`fetch` das rotas `/api`): análise, histórico e comparativo. |
+| `servicos/firebase.js` | **Lê os sensores direto do Firebase `tempo-uergs`, em tempo real, sem backend.** Também valida as faixas e converte a pressão de Pa para hPa. |
+| `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores` (Firebase direto), `useAnalise`, `useHistorico`, `useComparativo` (estes três usam o backend). |
 | `componentes/` | Telas e blocos visuais, cada um com seu `.css`: `MenuTopo`, `PainelClima`, `CardSensores`, `PaginaHistorico`, `PaginaComparativo`, `SeletorDia`, `PaginaSobre`, `PaginaContato`. |
 | `dadosExemplo.js` | Dados falsos usados enquanto não há histórico real. |
 | `assets/` | Logos e ícones dos sensores. |
@@ -71,3 +74,51 @@ VITE_API_URL = https://URL-DO-SEU-BACKEND/api
 ```
 
 e faça um novo deploy. No backend, o `cors()` já está liberado para qualquer origem.
+
+## Hospedar o backend na nuvem (Render, Railway etc.)
+
+O backend precisa ficar no ar 24h: é ele que coleta e salva os dados a cada 5 min, e é ele que o site publicado consulta. Só o frontend (GitHub Pages ou Vercel) não mostra dados.
+
+O `firebase.js` já está preparado: na nuvem ele lê a chave da variável `FIREBASE_CHAVE_JSON`; no computador continua usando `src/chave.json`.
+
+### 1. Gerar o valor da chave
+No terminal, na pasta `backend/`:
+```
+base64 -w0 src/chave.json
+```
+Copie o texto gigante que aparecer (é o conteúdo do `chave.json` em base64). **Trate como senha**: não coloque no git, em print ou em chat.
+
+### 2. Criar o serviço (exemplo: Render)
+1. Em [render.com](https://render.com), **New → Web Service** e conecte este repositório.
+2. **Root Directory:** `backend`
+3. **Build Command:** `npm install`
+4. **Start Command:** `npm start`
+5. Em **Environment**, crie as variáveis:
+
+| Variável | Valor |
+|---|---|
+| `FIREBASE_CHAVE_JSON` | o texto base64 do passo 1 |
+| `OPENWEATHER_KEY` | a chave da OpenWeather |
+| `OPENWEATHER_CIDADE` | `Guaiba,BR` (opcional) |
+| `ESTACAO_ID` | `ESTACAO_001` (opcional) |
+| `INTERVALO_MIN` | `5` (opcional) |
+
+A porta é definida pelo próprio serviço (o código já lê `PORT`). No Railway os passos são os mesmos: Root Directory `backend` e as mesmas variáveis.
+
+**Plano grátis do Render:** o serviço "dorme" após ~15 min sem acesso, e **a coleta para junto**. Para coletar 24h, use um plano pago (~US$5/mês) ou mantenha acessos periódicos (ex.: UptimeRobot chamando `/api/sensores` a cada 5 min).
+
+### 3. Testar
+Abra `https://SEU-SERVICO.onrender.com/api/sensores`. Deve aparecer um JSON com temperatura, umidade etc.
+
+### 4. Ligar o site ao backend
+No GitHub: **Settings → Secrets and variables → Actions → Variables → New repository variable**
+- Nome: `VITE_API_URL`
+- Valor: `https://SEU-SERVICO.onrender.com/api`
+
+Depois rode de novo o workflow **Publicar frontend no GitHub Pages** (Actions → Run workflow). A variável é embutida no site na hora do build, então é preciso publicar de novo sempre que ela mudar.
+
+> Na Vercel, a mesma variável (`VITE_API_URL`) é criada em Settings → Environment Variables.
+
+## Publicar o frontend no GitHub Pages
+
+O workflow `.github/workflows/pages.yml` publica o `frontend/` a cada push na `main`. Para funcionar, quem é administradora do repositório precisa ir em **Settings → Pages → Source** e escolher **GitHub Actions** (a opção "Deploy from a branch" publica a branch `gh-pages`, que não é atualizada pelo workflow). Link: `https://rafaelalprsk.github.io/estacao-meteorologica-uergs/`. O repositório precisa ser público no plano grátis.

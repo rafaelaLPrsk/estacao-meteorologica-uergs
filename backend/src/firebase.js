@@ -15,8 +15,14 @@ const app = initializeApp({
 });
 export const db = getDatabase(app);
 
-// 2) Banco dados-openweather (histórico e análises): leitura e escrita, usa a chave.json (conta de serviço).
-const chave = JSON.parse(readFileSync(new URL('./chave.json', import.meta.url), 'utf8'));
+// 2) Banco dados-openweather (histórico e análises): leitura e escrita, usa a chave da conta de serviço.
+// Na nuvem a chave vem da variável FIREBASE_CHAVE_JSON (JSON puro ou em base64); local, do arquivo chave.json.
+function carregarChave() {
+    const env = process.env.FIREBASE_CHAVE_JSON?.trim();
+    if (!env) return JSON.parse(readFileSync(new URL('./chave.json', import.meta.url), 'utf8'));
+    return JSON.parse(env.startsWith('{') ? env : Buffer.from(env, 'base64').toString('utf8'));
+}
+const chave = carregarChave();
 const appOw = admin.initializeApp({
     credential: admin.credential.cert(chave),
     databaseURL: process.env.DATABASE_URL_OW || 'https://dados-openweather-default-rtdb.asia-southeast1.firebasedatabase.app',
