@@ -2,7 +2,7 @@ name: Coletar dados da estação
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # a cada 5 min (o GitHub pode atrasar ou pular execuções)
+    - cron: '*/5 * * * *'   # mínimo do GitHub: 5 min (pode atrasar ou pular execuções)
   workflow_dispatch:
 
 # Evita duas coletas ao mesmo tempo
@@ -16,7 +16,7 @@ permissions:
 jobs:
   coletar:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
     defaults:
       run:
         working-directory: backend
@@ -28,7 +28,8 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npm run coletar
+      # Fica ~4,5 min verificando a cada 30 s: salva toda medição nova da estação (uma a cada ~72 s)
+      - run: npm run coletar -- --duracao 270 --intervalo 30
         env:
           FIREBASE_CHAVE_JSON: ${{ secrets.FIREBASE_CHAVE_JSON }}
           OPENWEATHER_KEY: ${{ secrets.OPENWEATHER_KEY }}

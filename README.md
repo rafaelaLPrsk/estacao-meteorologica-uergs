@@ -78,7 +78,7 @@ e faça um novo deploy. No backend, o `cors()` já está liberado para qualquer 
 
 ## Coleta 24h grátis com GitHub Actions
 
-Sem servidor e sem plano pago: o workflow `.github/workflows/coletar.yml` roda a cada 5 min no GitHub, lê a estação e a OpenWeather e grava no Firebase (`dados-openweather`). Ele executa `backend/src/coletar.js`, que faz **uma** coleta e termina (o mesmo `coletar()` de `clima.js` que o servidor usa).
+Sem servidor e sem plano pago: o workflow `.github/workflows/coletar.yml` é disparado pelo GitHub a cada 5 min (o mínimo que o agendamento permite). Cada execução fica ativa por ~4,5 min e **verifica a estação a cada 30 s**, salvando toda medição nova no Firebase (`dados-openweather`) junto com a OpenWeather. Como a estação envia uma leitura a cada ~72 s, o histórico fica com uma leitura por medição, sem repetir. Quem faz isso é `backend/src/coletar.js` (`node src/coletar.js --duracao 270 --intervalo 30`; sem argumentos faz uma coleta só), usando o mesmo `coletar()` de `clima.js` que o servidor usa.
 
 ### Configurar (uma vez, por quem é administradora do repositório)
 No GitHub: **Settings → Secrets and variables → Actions → Secrets → New repository secret**:
@@ -96,7 +96,7 @@ gh secret set OPENWEATHER_KEY
 Depois, em **Actions → Coletar dados da estação → Run workflow** para testar. As execuções seguintes são automáticas.
 
 ### Limites (citar na metodologia do artigo)
-- O agendamento do GitHub **atrasa e às vezes pula execuções**: na prática a coleta sai a cada 5 a 20 min, com intervalo irregular. Cada leitura guarda o horário real da medição (`atualizadoEm`) e o da coleta (`timestamp`).
+- O agendamento do GitHub **atrasa e às vezes pula execuções**. Quando isso acontece, o histórico do `dados-openweather` fica com buraco naquele período. As leituras da estação **não se perdem**: o Firebase `tempo-uergs` guarda todas (`estacao/ESTACAO_001/leituras`, desde 05/10/2026), então dá para preencher os buracos depois. Só o valor da OpenWeather daquele momento não é recuperável (a API gratuita não dá histórico). Como cada execução dura ~4,5 min e o disparo é de 5 em 5, a cobertura costuma ser quase contínua, mas pode haver buracos. Cada leitura guarda o horário real da medição (`atualizadoEm`) e o da coleta (`timestamp`).
 - Se o repositório ficar **60 dias sem nenhuma atividade** (commits), o GitHub desativa o agendamento. Basta reativar em Actions.
 - O repositório precisa ser **público** para os minutos serem ilimitados.
 - Só roda na branch `main`. Para parar a coleta, desative o workflow em Actions.
@@ -150,3 +150,11 @@ Depois rode de novo o workflow **Publicar frontend no GitHub Pages** (Actions �
 ## Publicar o frontend no GitHub Pages
 
 O workflow `.github/workflows/pages.yml` publica o `frontend/` a cada push na `main`. Para funcionar, quem é administradora do repositório precisa ir em **Settings → Pages → Source** e escolher **GitHub Actions** (a opção "Deploy from a branch" publica a branch `gh-pages`, que não é atualizada pelo workflow). Link: `https://rafaelalprsk.github.io/estacao-meteorologica-uergs/`. O repositório precisa ser público no plano grátis.
+
+## Campos do histórico (`dados-openweather/historico`)
+Cada leitura salva tem: `timestamp` (hora da coleta), `atualizadoEm` (hora da medição na estação), `status`, os sensores (`temperatura`, `umidade`, `pressao`, `chuva`, `uv`, `luminosidade`, `ventoVelocidade`, `ventoDirecao`) e a OpenWeather (`owTemp`, `owUmidade`, `owVento`, `owCondicao`).
+
+**Pressão da OpenWeather (atenção ao comparar):**
+- `pressao` é a da **nossa estação**, medida no local (hPa).
+- `owPressaoSolo` é a da OpenWeather **no nível do solo** (`grnd_level`). **É a comparável** com o sensor, e a que o Comparativo usa.
+- `owPressao` é a da OpenWeather **reduzida ao nível do mar** (`sea_level`). Fica ~3 hPa acima da medida no local, então **não deve ser usada** para validar o sensor. Leituras anteriores a 16/10/2026 só têm este campo (sem `owPressaoSolo`).

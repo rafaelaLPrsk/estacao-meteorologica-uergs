@@ -80,10 +80,11 @@ export async function buscarComparativo() {
     };
     const ultima = leituras.at(-1);
     return {
-        // OpenWeather da última coleta
+        // OpenWeather da última coleta. Pressão: nível do solo (owPressaoSolo), comparável ao sensor;
+        // owPressao (nível do mar) é de antes de 16/10 e fica só como referência.
         oficial: ultima && ultima.owTemp != null
-            ? { temp: ultima.owTemp, umidade: ultima.owUmidade, pressao: ultima.owPressao, vento: ultima.owVento, condicao: ultima.owCondicao ?? null }
+            ? { temp: ultima.owTemp, umidade: ultima.owUmidade, pressao: ultima.owPressaoSolo ?? ultima.owPressao, vento: ultima.owVento, condicao: ultima.owCondicao ?? null }
             : null,
-        series: { temp: par('temperatura', 'owTemp'), umidade: par('umidade', 'owUmidade'), pressao: par('pressao', 'owPressao') },
+        series: { temp: par('temperatura', 'owTemp'), umidade: par('umidade', 'owUmidade'), pressao: par('pressao', 'owPressaoSolo') },
     };
 }

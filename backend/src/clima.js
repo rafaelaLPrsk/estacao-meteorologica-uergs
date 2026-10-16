@@ -59,7 +59,9 @@ async function lerOpenWeather() {
     return {
         temp: em('temperatura', j.main.temp),
         umidade: em('umidade', j.main.humidity),
-        pressao: em('pressao', j.main.pressure),
+        // grnd_level = pressão no nível do solo: é a comparável com o sensor, que mede a pressão no local
+        pressao: em('pressao', j.main.grnd_level ?? j.main.pressure),
+        pressaoMar: em('pressao', j.main.sea_level ?? j.main.pressure), // reduzida ao nível do mar
         vento: em('ventoVelocidade', j.wind.speed * 3.6), // m/s -> km/h
         condicao: j.weather?.[0]?.description ?? null,
     };
@@ -93,7 +95,6 @@ export async function coletar() {
     if (!s) return;
 
     const anterior = await ultimaDoHistorico();
-    try { oficialAtual = await lerOpenWeather() ?? oficialAtual; } catch (e) { console.error(e.message); }
 
     analiseAtual = { texto: analisar(s, anterior), status: s.status, atualizadoEm: s.atualizadoEm };
 
@@ -102,10 +103,12 @@ export async function coletar() {
     // Mesma medição já salva (a estação ainda não enviou nada novo)
     if (anterior?.atualizadoEm && anterior.atualizadoEm === s.atualizadoEm) return console.log('Medição já salva, nada novo.');
 
+    // A OpenWeather só é consultada quando há medição nova para salvar (poupa a cota da API)
+    try { oficialAtual = await lerOpenWeather() ?? oficialAtual; } catch (e) { console.error(e.message); }
     const ow = oficialAtual;
     const leitura = {
         timestamp: Date.now(), ...s,
-        owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressao ?? null, owVento: ow?.vento ?? null, owCondicao: ow?.condicao ?? null,
+        owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressaoMar ?? null, owPressaoSolo: ow?.pressao ?? null, owVento: ow?.vento ?? null, owCondicao: ow?.condicao ?? null,
     };
     await dbOw.ref('historico').push(leitura);
     await dbOw.ref('analise_atual').set(analiseAtual);
