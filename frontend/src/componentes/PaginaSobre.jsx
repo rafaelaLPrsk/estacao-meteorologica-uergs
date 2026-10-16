@@ -30,7 +30,7 @@ function PaginaSobre({ voltar }) {
                         são comparados com os de uma fonte oficial, o que permite acompanhar o desvio entre as duas medições.
                     </p>
                     <div className="etiquetas-sobre">
-                        <span>Iniciação científica</span>
+                        
                         <span>Baixo custo</span>
                         <span>Comparativo com dados oficiais</span>
                     </div>
