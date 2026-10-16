@@ -15,7 +15,7 @@ backend/    Node + Express (lê o Firebase, consulta a OpenWeather, analisa e sa
 
 > A coleta (passo 2 e 3) pode rodar de três formas: `npm run dev` no backend (servidor), GitHub Actions (`.github/workflows/coletar.yml`, grátis) ou um servidor hospedado. O backend e as rotas `/api` continuam existindo, mas o site publicado não depende delas.
 
-Enquanto não houver histórico salvo, as telas de gráficos usam dados de exemplo (`frontend/src/dadosExemplo.js`).
+O site mostra **somente dados reais do nosso banco**. Onde ainda não há dados (dias sem coleta completa, séries sem leituras), as telas dizem "sem dados"; não existe dado de exemplo. Um dia do Histórico só aparece quando tem temperatura, umidade, pressão, chuva e vento.
 
 ## Arquivos
 
@@ -45,7 +45,7 @@ Rotas da API:
 | `servicos/historico.js` | **Calcula os gráficos** de Histórico (7 dias, hora a hora) e Comparativo (estação x OpenWeather) a partir das leituras salvas. |
 | `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores`, `useAnalise`, `useHistorico`, `useComparativo` (todos leem do Firebase). |
 | `componentes/` | Telas e blocos visuais, cada um com seu `.css`: `MenuTopo`, `PainelClima`, `CardSensores`, `PaginaHistorico`, `PaginaComparativo`, `SeletorDia`, `PaginaSobre`, `PaginaContato`. |
-| `dadosExemplo.js` | Dados falsos usados enquanto não há histórico real. |
+| `dias.js` | Só os rótulos dos últimos 7 dias (datas), sem nenhum dado de medição. |
 | `assets/` | Logos e ícones dos sensores. |
 | `../vite.config.js` | Redireciona `/api` para o backend (`localhost:3001`) em desenvolvimento. |
 
@@ -68,13 +68,7 @@ cd frontend && npm install && npm run dev
 
 A cada push, a Vercel publica de novo. Branches e Pull Requests ganham um link de prévia próprio, útil para testar o layout no celular antes de ir para a `main`.
 
-**Atenção:** a Vercel hospeda só o frontend. O backend (`backend/`) precisa estar hospedado em outro lugar (Railway, Render etc.). Sem ele, o layout abre, mas os cards ficam vazios e os gráficos usam os dados de exemplo. Com o backend no ar, em **Settings → Environment Variables** da Vercel crie:
-
-```
-VITE_API_URL = https://URL-DO-SEU-BACKEND/api
-```
-
-e faça um novo deploy. No backend, o `cors()` já está liberado para qualquer origem.
+**Não precisa de backend:** o site lê tudo direto do Firebase (sensores e histórico), então basta publicar o frontend. A coleta que alimenta o histórico roda à parte, no GitHub Actions (seção "Coleta 24h grátis com GitHub Actions").
 
 ## Coleta 24h grátis com GitHub Actions
 
@@ -105,7 +99,7 @@ Depois, em **Actions → Coletar dados da estação → Run workflow** para test
 
 ## Hospedar o backend na nuvem (alternativa paga: Render, Railway etc.)
 
-O backend precisa ficar no ar 24h: é ele que coleta e salva os dados a cada 5 min, e é ele que o site publicado consulta. Só o frontend (GitHub Pages ou Vercel) não mostra dados.
+**Opcional.** Só serve se vocês preferirem um servidor ligado 24h no lugar do GitHub Actions para coletar (ele coleta e salva os dados a cada 5 min). O site **não** consulta o backend: lê direto do Firebase.
 
 O `firebase.js` já está preparado: na nuvem ele lê a chave da variável `FIREBASE_CHAVE_JSON`; no computador continua usando `src/chave.json`.
 
@@ -137,15 +131,6 @@ A porta é definida pelo próprio serviço (o código já lê `PORT`). No Railwa
 
 ### 3. Testar
 Abra `https://SEU-SERVICO.onrender.com/api/sensores`. Deve aparecer um JSON com temperatura, umidade etc.
-
-### 4. Ligar o site ao backend
-No GitHub: **Settings → Secrets and variables → Actions → Variables → New repository variable**
-- Nome: `VITE_API_URL`
-- Valor: `https://SEU-SERVICO.onrender.com/api`
-
-Depois rode de novo o workflow **Publicar frontend no GitHub Pages** (Actions → Run workflow). A variável é embutida no site na hora do build, então é preciso publicar de novo sempre que ela mudar.
-
-> Na Vercel, a mesma variável (`VITE_API_URL`) é criada em Settings → Environment Variables.
 
 ## Publicar o frontend no GitHub Pages
 

@@ -19,9 +19,8 @@ function porHora(leituras, campo, ateHora) {
 function resumoDoDia(leituras, ate) {
     const h = (campo) => porHora(leituras, campo, ate);
     const horaria = { temp: h('temperatura'), umidade: h('umidade'), pressao: h('pressao'), vento: h('ventoVelocidade'), chuva: h('chuva') };
-    // Sem temperatura, umidade ou pressão o dia cai para o exemplo.
-    // Chuva e vento sem dados (sensor desligado) ficam null: a tela usa o exemplo só nessas métricas.
-    if (!horaria.temp || !horaria.umidade || !horaria.pressao) return null;
+    // Dia sem alguma das métricas não é mostrado (a tela exibe "sem dados")
+    if (Object.values(horaria).some((v) => !v)) return null;
 
     const comparaveis = leituras
         .filter((l) => typeof l.owTemp === 'number' && typeof l.temperatura === 'number')
@@ -32,7 +31,7 @@ function resumoDoDia(leituras, ate) {
         resumo: {
             tempMax: Math.max(...horaria.temp), tempMin: Math.min(...horaria.temp),
             umidade: media(horaria.umidade), pressao: media(horaria.pressao),
-            chuva: horaria.chuva ? soma(horaria.chuva) : null, vento: horaria.vento ? media(horaria.vento) : null,
+            chuva: soma(horaria.chuva), vento: media(horaria.vento),
         },
         horaria,
     };
@@ -79,11 +78,22 @@ export async function buscarComparativo() {
         return l && o ? { local: l, oficial: o } : null;
     };
     const ultima = leituras.at(-1);
+    // Os dois lados vêm do MESMO registro salvo, então são da mesma hora (comparação justa).
+    const idadeMin = ultima ? (Date.now() - Date.parse(ultima.atualizadoEm)) / 60000 : null;
     return {
-        // OpenWeather da última coleta. Pressão: nível do solo (owPressaoSolo), comparável ao sensor;
+        local: ultima && {
+            temp: ultima.temperatura ?? null, umidade: ultima.umidade ?? null, pressao: ultima.pressao ?? null,
+            vento: ultima.ventoVelocidade ?? null,
+            status: !Number.isFinite(idadeMin) ? 'desconhecido' : idadeMin <= 15 ? 'agora' : 'ultimo',
+            atualizadoEm: ultima.atualizadoEm,
+        },
+        // OpenWeather da mesma coleta. Pressão: nível do solo (owPressaoSolo), comparável ao sensor;
         // owPressao (nível do mar) é de antes de 16/10 e fica só como referência.
         oficial: ultima && ultima.owTemp != null
-            ? { temp: ultima.owTemp, umidade: ultima.owUmidade, pressao: ultima.owPressaoSolo ?? ultima.owPressao, vento: ultima.owVento, condicao: ultima.owCondicao ?? null }
+            ? {
+                temp: ultima.owTemp, umidade: ultima.owUmidade, pressao: ultima.owPressaoSolo ?? ultima.owPressao,
+                vento: ultima.owVento, condicao: ultima.owCondicao ?? null, coletadoEm: ultima.timestamp,
+            }
             : null,
         series: { temp: par('temperatura', 'owTemp'), umidade: par('umidade', 'owUmidade'), pressao: par('pressao', 'owPressaoSolo') },
     };

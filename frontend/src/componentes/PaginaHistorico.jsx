@@ -81,35 +81,38 @@ function Cartao({ titulo, sub, legenda, children }) {
 }
 
 function PaginaHistorico() {
-    const { DIAS, SEMANA, horaria } = useHistorico();
+    const { DIAS, dias, carregando } = useHistorico();
     const [dia, setDia] = useState(null); // null = semana toda
     const f = (n, c = 1) => n.toFixed(c);
 
-    let tempMax, tempMin, umidade, pressao, chuva, vento, rotulos, destaque;
-    let resumoTemp, resumoChuva;
+    // Só entram dias com dados reais e completos
+    const validos = DIAS.map((_, i) => i).filter((i) => dias[i]);
+    const semDados = dia === null ? validos.length === 0 : !dias[dia];
 
-    if (dia === null) {
-        ({ tempMax, tempMin, umidade, pressao, chuva, vento } = SEMANA);
-        rotulos = DIAS.map((d) => (d.hoje ? 'Hoje' : d.curto));
-        destaque = 6;
-        resumoTemp = [...tempMax, ...tempMin];
-        resumoChuva = chuva;
-    } else {
-        const t = horaria(dia, 'temp');
-        tempMax = t; tempMin = null;
-        umidade = horaria(dia, 'umidade');
-        pressao = horaria(dia, 'pressao');
-        chuva = horaria(dia, 'chuva');
-        vento = horaria(dia, 'vento');
-        rotulos = t.map((_, h) => (h % 3 === 0 ? `${String(h).padStart(2, '0')}h` : ''));
-        destaque = DIAS[dia].hoje ? t.length - 1 : -1;
-        resumoTemp = t;
+    let tempMax, tempMin, umidade, pressao, chuva, vento, rotulos, destaque;
+    let resumoTemp, resumoChuva, minMaxTemp;
+
+    if (!semDados) {
+        if (dia === null) {
+            const r = (k) => validos.map((i) => dias[i].resumo[k]);
+            tempMax = r('tempMax'); tempMin = r('tempMin'); umidade = r('umidade');
+            pressao = r('pressao'); chuva = r('chuva'); vento = r('vento');
+            rotulos = validos.map((i) => (DIAS[i].hoje ? 'Hoje' : DIAS[i].curto));
+            destaque = validos.indexOf(6);
+            resumoTemp = [...tempMax, ...tempMin];
+            minMaxTemp = [Math.min(...tempMin), Math.max(...tempMax)];
+        } else {
+            const h = dias[dia].horaria;
+            const t = h.temp;
+            tempMax = t; tempMin = null;
+            umidade = h.umidade; pressao = h.pressao; chuva = h.chuva; vento = h.vento;
+            rotulos = t.map((_, hora) => (hora % 3 === 0 ? `${String(hora).padStart(2, '0')}h` : ''));
+            destaque = DIAS[dia].hoje ? t.length - 1 : -1;
+            resumoTemp = t;
+            minMaxTemp = [Math.min(...t), Math.max(...t)];
+        }
         resumoChuva = chuva;
     }
-
-    const minMaxTemp = dia === null
-        ? [Math.min(...tempMin), Math.max(...tempMax)]
-        : [Math.min(...tempMax), Math.max(...tempMax)];
 
     return (
         <div className="hist-wrapper">
@@ -130,12 +133,19 @@ function PaginaHistorico() {
                     {DIAS.map((d, i) => (
                         <button key={d.rotulo} className={`hist-dia ${dia === i ? 'ativo' : ''}`} onClick={() => setDia(i)}>
                             <span className="hist-dia-nome">{d.hoje ? 'Hoje' : d.rotulo}</span>
-                            <span className="hist-dia-faixa">{SEMANA.tempMin[i].toFixed(0)}° / {SEMANA.tempMax[i].toFixed(0)}°</span>
+                            <span className="hist-dia-faixa">{dias[i] ? `${dias[i].resumo.tempMin.toFixed(0)}° / ${dias[i].resumo.tempMax.toFixed(0)}°` : 'sem dados'}</span>
                         </button>
                     ))}
                 </aside>
 
                 <div className="hist-conteudo" key={dia === null ? 'semana' : dia}>
+            {semDados ? (
+                <p className="hist-vazio">
+                    {carregando ? 'Carregando dados...'
+                        : dia === null ? 'Ainda não há dias com dados completos. O histórico aparece conforme a estação é coletada.'
+                        : 'Sem dados completos neste dia.'}
+                </p>
+            ) : (<>
             <div className="hist-resumos">
                 <Resumo icone="temp" titulo="Temperatura média" valor={f(media(resumoTemp))} unidade="°C"
                     detalhe={`Mín ${f(minMaxTemp[0])}° · Máx ${f(minMaxTemp[1])}°`} />
@@ -172,6 +182,7 @@ function PaginaHistorico() {
                     <Grafico rotulos={rotulos} destaque={destaque} barras={{ v: vento }} zero />
                 </Cartao>
             </div>
+            </>)}
                 </div>
             </div>
         </div>

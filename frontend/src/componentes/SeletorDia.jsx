@@ -1,4 +1,4 @@
-import { DIAS } from '../dadosExemplo';
+import { DIAS } from '../dias';
 import './SeletorDia.css';
 
 // Barra para percorrer os dias da semana (valor null = semana toda)

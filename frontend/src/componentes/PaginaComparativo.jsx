@@ -38,6 +38,7 @@ const desvioPadrao = (v) => {
     const m = media(v);
     return Math.sqrt(media(v.map((x) => (x - m) ** 2)));
 };
+const hhmm = (v) => (v ? new Date(v).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null);
 const sinal = (n, casas = 1) => `${n > 0 ? '+' : ''}${n.toFixed(casas)}`;
 
 function Grafico({ serie }) {
@@ -89,24 +90,28 @@ const pearson = (a, b) => {
 
 // Discrepância (estação - OpenWeather) por faixa horária ou por dia, com taxa de acerto
 function Discrepancia() {
-    const { DIAS, horaria, deltaHoraria } = useHistorico();
+    const { DIAS, dias: dadosDias } = useHistorico();
     const [dia, setDia] = useState(6);
-    const dias = dia === null ? DIAS.map((_, i) => i) : [dia];
-    const deltas = dias.flatMap((d) => deltaHoraria(d));
-    const locais = dias.flatMap((d) => horaria(d, 'temp'));
+    const comDelta = (i) => dadosDias[i]?.horaria.delta ?? null;
+    const lista = dia === null ? DIAS.map((_, i) => i).filter(comDelta) : (comDelta(dia) ? [dia] : []);
+    const deltas = lista.flatMap((i) => comDelta(i));
+    const locais = lista.flatMap((i) => dadosDias[i].horaria.temp);
     const oficiais = locais.map((v, i) => v - deltas[i]);
+    const vazio = deltas.length === 0;
 
-    let barras;
-    if (dia === null) {
-        barras = DIAS.map((d, i) => ({ rotulo: d.hoje ? 'Hoje' : d.curto, v: media(deltaHoraria(i)), ultimo: d.hoje }));
-    } else {
-        const d = deltaHoraria(dia);
-        const horas = [4, 8, 12, 16, 20].filter((h) => h < d.length);
-        barras = horas.map((h) => ({ rotulo: `${String(h).padStart(2, '0')}h`, v: d[h] }));
-        if (DIAS[dia].hoje) barras.push({ rotulo: 'Agora', v: d[d.length - 1], ultimo: true });
+    let barras = [];
+    if (!vazio) {
+        if (dia === null) {
+            barras = lista.map((i) => ({ rotulo: DIAS[i].hoje ? 'Hoje' : DIAS[i].curto, v: media(comDelta(i)), ultimo: DIAS[i].hoje }));
+        } else {
+            const d = comDelta(dia);
+            const horas = [4, 8, 12, 16, 20].filter((h) => h < d.length);
+            barras = horas.map((h) => ({ rotulo: `${String(h).padStart(2, '0')}h`, v: d[h] }));
+            if (DIAS[dia].hoje) barras.push({ rotulo: 'Agora', v: d[d.length - 1], ultimo: true });
+        }
     }
 
-    const acerto = (deltas.filter((v) => Math.abs(v) <= TOLERANCIA).length / deltas.length) * 100;
+    const acerto = vazio ? null : (deltas.filter((v) => Math.abs(v) <= TOLERANCIA).length / deltas.length) * 100;
     const L = 600, A = 190, M = { e: 20, d: 20, c: 26, b: 28 };
     const maximo = 7;
     const passo = (L - M.e - M.d) / barras.length;
@@ -123,6 +128,7 @@ function Discrepancia() {
                 <span className="comp-destaque">Tolerância aceitável: ±{TOLERANCIA.toFixed(1)}°C</span>
             </div>
             <SeletorDia valor={dia} onChange={setDia} />
+            {vazio ? <p className="comp-vazio">Sem dados de comparação neste período.</p> : (<>
             <svg viewBox={`0 0 ${L} ${A}`} className="comp-grafico comp-grafico-barras">
                 <line x1={M.e} x2={L - M.d} y1={A - M.b} y2={A - M.b} className="comp-grade" />
                 <line x1={M.e} x2={L - M.d} y1={A - M.b - h(TOLERANCIA)} y2={A - M.b - h(TOLERANCIA)} className="comp-tolerancia" />
@@ -142,6 +148,7 @@ function Discrepancia() {
                 <span>Taxa de acerto (dentro da tolerância): <b>{acerto.toFixed(0)}%</b></span>
                 <span className="comp-destaque">Correlação de Pearson r = {pearson(locais, oficiais).toFixed(3)}</span>
             </div>
+            </>)}
         </section>
     );
 }
@@ -149,10 +156,12 @@ function Discrepancia() {
 function PaginaComparativo() {
     const [metrica, setMetrica] = useState('temp');
 
-    const { local, oficial, series } = useComparativo();
+    const { local: loc, oficial: ofi, series } = useComparativo();
+    const local = loc ?? {};
+    const oficial = ofi ?? {};
     const delta = (k) => (local[k] == null || oficial[k] == null ? null : local[k] - oficial[k]);
     const serie = series[metrica];
-    const dp = desvioPadrao(serie.local.map((v, i) => v - serie.oficial[i]));
+    const dp = serie ? desvioPadrao(serie.local.map((v, i) => v - serie.oficial[i])) : null;
     const fmt = (v, c = 1) => (v == null ? '--' : Number(v).toFixed(c));
 
     const linhas = [
@@ -188,7 +197,8 @@ function PaginaComparativo() {
                     <footer className="comp-rodape">
                         <span>Sensores da estação</span>
                         <span className="comp-destaque">
-                            {local.status === 'agora' ? 'Dados de agora' : local.status ? 'Últimos dados registrados' : 'Exemplo'}
+                            {local.status === 'agora' ? 'Dados de agora' : local.status ? 'Últimos dados registrados' : 'Sem dados'}
+                            {hhmm(local.atualizadoEm) && ` · medido às ${hhmm(local.atualizadoEm)}`}
                         </span>
                     </footer>
                 </section>
@@ -238,11 +248,13 @@ function PaginaComparativo() {
                     ))}
                     <div className="comp-linha">
                         <span className="comp-rotulo"><Icone d={ICONES.nuvem} /> Condição Global</span>
-                        <strong className="comp-condicao">{oficial.condicao}</strong>
+                        <strong className="comp-condicao">{oficial.condicao ?? '--'}</strong>
                     </div>
                     <footer className="comp-rodape">
                         <span>Estação base: Guaíba</span>
-                        <span className="comp-destaque">OpenWeather</span>
+                        <span className="comp-destaque">
+                            OpenWeather{hhmm(oficial.coletadoEm) && ` · consultada às ${hhmm(oficial.coletadoEm)}`}
+                        </span>
                     </footer>
                 </section>
             </div>
@@ -265,7 +277,7 @@ function PaginaComparativo() {
                     <span><i className="leg-local" /> Estação Local UERGS</span>
                     <span><i className="leg-oficial" /> Oficial (OpenWeather)</span>
                 </div>
-                <Grafico serie={serie} />
+                {serie ? <Grafico serie={serie} /> : <p className="comp-vazio">Sem dados suficientes nas últimas 12 horas.</p>}
             </section>
 
             <Discrepancia />

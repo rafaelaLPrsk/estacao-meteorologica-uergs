@@ -234,3 +234,5 @@
 .comp-rodape-disc { flex-wrap: wrap; gap: 8px 16px; border-top: 1px solid rgba(15, 40, 71, 0.08); padding-top: 10px; }
 .comp-grafico-card .seletor-dia { box-shadow: none; background: var(--superficie); }
 .comp-grafico-card .seletor-dia button.ativo { background: var(--primaria); }
+
+.comp-vazio { padding: 32px 16px; text-align: center; font-size: 14px; font-weight: 600; color: var(--neutra); background: var(--superficie); border-radius: 18px; }

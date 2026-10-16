@@ -129,3 +129,5 @@
     .hist-grid { grid-template-columns: 1fr; }
     .hist-wrapper { padding-inline: 16px; }
 }
+
+.hist-vazio { padding: 40px 16px; text-align: center; font-size: 14px; font-weight: 600; color: var(--neutra); background: #ffffff; border-radius: 18px; }
