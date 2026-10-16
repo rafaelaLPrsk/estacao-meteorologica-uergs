@@ -54,3 +54,20 @@ cd backend  && cp .env.example .env   # preencher OPENWEATHER_KEY
 npm install && npm run dev            # porta 3001
 cd frontend && npm install && npm run dev
 ```
+
+## Publicar o frontend na Vercel (grátis)
+
+1. Entre em [vercel.com](https://vercel.com) com a conta do GitHub e clique em **Add New → Project**.
+2. Importe o repositório `estacao-meteorologica-uergs`.
+3. Em **Root Directory**, escolha `frontend`. O restante é detectado sozinho (Framework: Vite, build `npm run build`, saída `dist`).
+4. Clique em **Deploy**. Você recebe um link `https://....vercel.app` que abre no celular.
+
+A cada push, a Vercel publica de novo. Branches e Pull Requests ganham um link de prévia próprio, útil para testar o layout no celular antes de ir para a `main`.
+
+**Atenção:** a Vercel hospeda só o frontend. O backend (`backend/`) precisa estar hospedado em outro lugar (Railway, Render etc.). Sem ele, o layout abre, mas os cards ficam vazios e os gráficos usam os dados de exemplo. Com o backend no ar, em **Settings → Environment Variables** da Vercel crie:
+
+```
+VITE_API_URL = https://URL-DO-SEU-BACKEND/api
+```
+
+e faça um novo deploy. No backend, o `cors()` já está liberado para qualquer origem.

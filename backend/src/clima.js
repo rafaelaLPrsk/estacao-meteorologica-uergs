@@ -1,4 +1,4 @@
-import { ref, get } from 'firebase/database';
+import { ref, get, query, limitToLast } from 'firebase/database';
 import { db, dbOw } from './firebase.js';
 
 const ESTACAO = process.env.ESTACAO_ID || 'ESTACAO_001';
