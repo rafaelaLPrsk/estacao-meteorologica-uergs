@@ -1,21 +1,16 @@
 import './PaginaSobre.css';
 import logoUergs from '../assets/logo-uergs.png';
+import fotoEstacao from '../assets/estacao.jpg';
 
 function PaginaSobre({ voltar }) {
     return (
         <div className="sobre-wrapper">
 
-            {/* 1. CARTÃO PRINCIPAL COM O MAPA "VAZANDO" */}
+            {/* 1. CARTÃO PRINCIPAL COM A FOTO DA ESTAÇÃO */}
             <div className="card-sobre">
                 <div className="bloco-gps">
-                    <iframe
-                        className="mapa"
-                        title="Localização da estação"
-                        src="https://www.google.com/maps?q=Rua+Santa+Maria,+2300,+Jardim+dos+Lagos,+Gua%C3%ADba+-+RS&output=embed"
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                    />
-                    <span className="texto-gps-interno">Rua Santa Maria, 2300 · Jardim dos Lagos, Guaíba - RS</span>
+                    <img className="foto-estacao" src={fotoEstacao} alt="Estação meteorológica da UERGS Guaíba" />
+                    <span className="texto-gps-interno">Estação meteorológica · UERGS Guaíba</span>
                 </div>
 
                 <div className="texto-sobre">

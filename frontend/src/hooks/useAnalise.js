@@ -1,5 +1,5 @@
-import { buscarAnalise } from '../servicos/api';
+import { lerAnaliseAtual } from '../servicos/firebase';
 import { usePolling } from './usePolling';
 
-// Análise do clima do momento, gerada pelo backend.
-export const useAnalise = () => usePolling(buscarAnalise, { texto: null }, 30000);
+// Análise do clima do momento, gravada pela coleta no Firebase.
+export const useAnalise = () => usePolling(lerAnaliseAtual, { texto: null }, 60000);

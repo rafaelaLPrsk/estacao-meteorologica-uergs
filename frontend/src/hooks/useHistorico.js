@@ -1,4 +1,4 @@
-import { buscarHistorico } from '../servicos/api';
+import { buscarHistorico } from '../servicos/historico';
 import { usePolling } from './usePolling';
 import { DIAS, SEMANA, horaria as horariaExemplo, deltaHoraria as deltaExemplo } from '../dadosExemplo';
 
@@ -7,7 +7,7 @@ const INICIAL = { dias: [] };
 // Mesma interface do dadosExemplo, mas com dados reais do backend.
 // Dias ainda sem leituras salvas continuam usando os dados de exemplo.
 export function useHistorico() {
-    const { dias } = usePolling(buscarHistorico, INICIAL, 60000);
+    const { dias } = usePolling(buscarHistorico, INICIAL, 300000);
 
     const semana = {};
     Object.keys(SEMANA).forEach((k) => {

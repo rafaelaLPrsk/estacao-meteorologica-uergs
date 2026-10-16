@@ -11,9 +11,9 @@ backend/    Node + Express (lê o Firebase, consulta a OpenWeather, analisa e sa
 1. O ESP32 grava as leituras no Firebase `tempo-uergs` (`estacao/ESTACAO_001`).
 2. A cada 5 min o backend lê a estação, descarta valores fora da faixa real, consulta a OpenWeather e gera a análise do momento.
 3. Se os dados da estação são recentes (≤ 15 min), salva a leitura no banco `dados-openweather` (`historico` e `analise_atual`).
-4. O frontend lê os sensores (cards e painel "Agora") **direto do Firebase** e consulta o backend para `/api/analise`, `/api/historico` e `/api/comparativo`, montando cards e gráficos.
+4. O frontend **não precisa do backend**: lê os sensores do Firebase `tempo-uergs` e a análise e o histórico do `dados-openweather` (leitura pública), e calcula os gráficos de Histórico e Comparativo no próprio navegador (`frontend/src/servicos/`).
 
-> Por isso, no GitHub Pages os sensores aparecem mesmo sem backend hospedado. Análise, histórico e comparativo só funcionam com o backend no ar.
+> A coleta (passo 2 e 3) pode rodar de três formas: `npm run dev` no backend (servidor), GitHub Actions (`.github/workflows/coletar.yml`, grátis) ou um servidor hospedado. O backend e as rotas `/api` continuam existindo, mas o site publicado não depende delas.
 
 Enquanto não houver histórico salvo, as telas de gráficos usam dados de exemplo (`frontend/src/dadosExemplo.js`).
 
@@ -40,9 +40,10 @@ Rotas da API:
 | Pasta/arquivo | O que faz |
 |---|---|
 | `main.jsx`, `App.jsx` | Entrada do React e troca de abas (Agora, Histórico, Comparativo, Sobre, Contato). |
-| `servicos/api.js` | Chama o backend (`fetch` das rotas `/api`): análise, histórico e comparativo. |
-| `servicos/firebase.js` | **Lê os sensores direto do Firebase `tempo-uergs`, em tempo real, sem backend.** Também valida as faixas e converte a pressão de Pa para hPa. |
-| `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores` (Firebase direto), `useAnalise`, `useHistorico`, `useComparativo` (estes três usam o backend). |
+| `servicos/api.js` | Chama as rotas `/api` do backend. Hoje o site não usa (ficou como alternativa). |
+| `servicos/firebase.js` | **Lê direto do Firebase, sem backend:** sensores em tempo real (`tempo-uergs`) e histórico/análise (`dados-openweather`). Valida as faixas e converte a pressão de Pa para hPa. |
+| `servicos/historico.js` | **Calcula os gráficos** de Histórico (7 dias, hora a hora) e Comparativo (estação x OpenWeather) a partir das leituras salvas. |
+| `hooks/` | Buscam os dados da API e atualizam sozinhos (`usePolling.js`): `useSensores`, `useAnalise`, `useHistorico`, `useComparativo` (todos leem do Firebase). |
 | `componentes/` | Telas e blocos visuais, cada um com seu `.css`: `MenuTopo`, `PainelClima`, `CardSensores`, `PaginaHistorico`, `PaginaComparativo`, `SeletorDia`, `PaginaSobre`, `PaginaContato`. |
 | `dadosExemplo.js` | Dados falsos usados enquanto não há histórico real. |
 | `assets/` | Logos e ícones dos sensores. |

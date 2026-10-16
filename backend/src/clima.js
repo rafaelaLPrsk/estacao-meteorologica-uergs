@@ -20,8 +20,8 @@ export async function lerSensores() {
 
     const s = Object.values(val)[0];
 
-    // Cada sensor vem como { valor, unidade, ativo }. Sensor desligado (ativo: false) ou fora da faixa vira null.
-    const pega = (campo, no) => (no?.ativo !== false && valido(campo, no?.valor) ? no.valor : null);
+    // Cada sensor vem como { valor, unidade, ativo }. Valor fora da faixa (ou ausente) vira null; o campo `ativo` não é usado.
+    const pega = (campo, no) => (valido(campo, no?.valor) ? no.valor : null);
 
     // dataHora.timestamp é o horário da medição, em segundos
     const segundos = Number(s.dataHora?.timestamp);
@@ -38,7 +38,7 @@ export async function lerSensores() {
         uv: pega('uv', s.uv),
         luminosidade: pega('luminosidade', s.luminosidade),
         ventoVelocidade: pega('ventoVelocidade', s.vento?.velocidade),
-        ventoDirecao: s.vento?.direcao?.ativo === false ? null : s.vento?.direcao?.valor ?? null,
+        ventoDirecao: s.vento?.direcao?.valor ?? null,
         atualizadoEm: ultimo ? new Date(ultimo).toISOString() : null,
         // 'agora' = dado recente | 'ultimo' = último registro conhecido | 'desconhecido' = sem horário
         status: !ultimo ? 'desconhecido' : Date.now() - ultimo <= ATUAL_ATE_MS ? 'agora' : 'ultimo',
@@ -105,7 +105,7 @@ export async function coletar() {
     const ow = oficialAtual;
     const leitura = {
         timestamp: Date.now(), ...s,
-        owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressao ?? null, owVento: ow?.vento ?? null,
+        owTemp: ow?.temp ?? null, owUmidade: ow?.umidade ?? null, owPressao: ow?.pressao ?? null, owVento: ow?.vento ?? null, owCondicao: ow?.condicao ?? null,
     };
     await dbOw.ref('historico').push(leitura);
     await dbOw.ref('analise_atual').set(analiseAtual);

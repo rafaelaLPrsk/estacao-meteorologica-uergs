@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, query, limitToLast, onValue } from 'firebase/database';
+import { getDatabase, ref, query, limitToLast, onValue, get } from 'firebase/database';
 
 // Banco da estação (tempo-uergs): configuração pública, leitura direta pelo navegador (sem backend).
 const app = initializeApp({
@@ -23,8 +23,8 @@ const LIMITES = {
 };
 const valido = (campo, v) => typeof v === 'number' && Number.isFinite(v) && v >= LIMITES[campo][0] && v <= LIMITES[campo][1];
 
-// Sensor desligado (ativo: false) ou fora da faixa vira null.
-const pega = (campo, no) => (no?.ativo !== false && valido(campo, no?.valor) ? no.valor : null);
+// Valor fora da faixa válida (ou ausente) vira null. O campo `ativo` da estação não é usado: o valor enviado é mostrado.
+const pega = (campo, no) => (valido(campo, no?.valor) ? no.valor : null);
 
 // Uma leitura crua do Firebase -> o formato que as telas usam (mesmo de /api/sensores).
 export function interpretarLeitura(s, agora = Date.now()) {
@@ -39,7 +39,7 @@ export function interpretarLeitura(s, agora = Date.now()) {
         uv: pega('uv', s?.uv),
         luminosidade: pega('luminosidade', s?.luminosidade),
         ventoVelocidade: pega('ventoVelocidade', s?.vento?.velocidade),
-        ventoDirecao: s?.vento?.direcao?.ativo === false ? null : s?.vento?.direcao?.valor ?? null,
+        ventoDirecao: s?.vento?.direcao?.valor ?? null,
         atualizadoEm: ultimo ? new Date(ultimo).toISOString() : null,
         // 'agora' = dado recente | 'ultimo' = último registro conhecido | 'desconhecido' = sem horário
         status: !ultimo ? 'desconhecido' : agora - ultimo <= ATUAL_ATE_MS ? 'agora' : 'ultimo',
@@ -53,4 +53,21 @@ export function ouvirUltimaLeitura(aoReceber) {
         const leituras = snap.val();
         if (leituras) aoReceber(Object.values(leituras)[0]);
     }, (erro) => console.error('Firebase:', erro.message));
+}
+
+// Banco dados-openweather (histórico e análise gravados pela coleta): leitura pública, sem backend.
+const appOw = initializeApp({
+    databaseURL: 'https://dados-openweather-default-rtdb.asia-southeast1.firebasedatabase.app',
+}, 'openweather');
+const dbOw = getDatabase(appOw);
+
+// Últimas `n` leituras salvas (as chaves do push são cronológicas).
+export async function lerHistoricoBruto(n) {
+    const snap = await get(query(ref(dbOw, 'historico'), limitToLast(n)));
+    return Object.values(snap.val() ?? {});
+}
+
+export async function lerAnaliseAtual() {
+    const snap = await get(ref(dbOw, 'analise_atual'));
+    return snap.val() ?? { texto: null };
 }

@@ -27,7 +27,6 @@
     background-color: var(--primaria);
     border-radius: 20px;
     width: 340px;
-    height: 300px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -39,10 +38,11 @@
     box-shadow: 0 10px 20px rgba(15, 40, 71, 0.25); /* Uma sombra para dar 3D */
 }
 
-.mapa {
-    border: none;
+.foto-estacao {
+    display: block;
     width: 100%;
-    flex: 1;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
     border-radius: 15px;
 }
 
@@ -127,5 +127,6 @@
     .sobre-wrapper { padding: 20px 16px; }
     .card-sobre { flex-direction: column; padding: 16px; }
     .bloco-gps { width: 100%; margin: 0 0 20px; }
+    .foto-estacao { aspect-ratio: 4 / 3; object-position: center 30%; }
     .rodape-sobre { flex-direction: column; gap: 16px; }
 }
