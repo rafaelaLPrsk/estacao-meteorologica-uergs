@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 30px 60px;
+    padding: 24px 40px;
     width: 100%;
 }
 
@@ -13,11 +13,11 @@
     background-color: #ffffff;
     border-radius: 35px;
     /* Tiramos o padding da esquerda porque o GPS vai ocupar aquele espaço */
-    padding: 36px 50px 36px 0;
+    padding: 30px 40px 30px 0;
     display: flex;
     align-items: center;
     width: 100%;
-    max-width: 1050px;
+    max-width: 960px;
     box-shadow: 0 10px 30px rgba(15, 40, 71, 0.06);
     margin-top: 30px;
 }
@@ -26,24 +26,91 @@
 .bloco-gps {
     background-color: var(--primaria);
     border-radius: 20px;
-    width: 340px;
+    width: 300px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
     padding: 6px;
     flex-shrink: 0;
-    margin-left: 36px; /* Dentro do cartão */
-    margin-right: 50px; /* Empurra o texto para longe dele */
+    margin-left: 28px; /* Dentro do cartão */
+    margin-right: 36px; /* Empurra o texto para longe dele */
     box-shadow: 0 10px 20px rgba(15, 40, 71, 0.25); /* Uma sombra para dar 3D */
 }
 
-.foto-estacao {
+.carrossel-foto {
+    position: relative;
+    width: 100%;
+}
+
+.foto-carrossel {
     display: block;
     width: 100%;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     border-radius: 15px;
+}
+
+.seta-carrossel {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 68px;
+    padding: 0;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    z-index: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.seta-carrossel span {
+    display: block;
+    font-family: sans-serif;
+    font-size: 64px;
+    font-weight: 400;
+    line-height: 0.8;
+}
+
+.seta-carrossel:hover span { transform: scale(1.12); }
+
+.seta-carrossel:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+}
+
+.seta-anterior { left: 4px; }
+.seta-proxima { right: 4px; }
+
+.legenda-carrossel {
+    width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    color: #ffffff;
+    text-align: center;
+}
+
+.legenda-carrossel h3 {
+    margin: 0;
+    max-height: 2.4em;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.legenda-carrossel p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
 }
 
 .texto-gps-interno {
@@ -127,6 +194,6 @@
     .sobre-wrapper { padding: 20px 16px; }
     .card-sobre { flex-direction: column; padding: 16px; }
     .bloco-gps { width: 100%; margin: 0 0 20px; }
-    .foto-estacao { aspect-ratio: 4 / 3; object-position: center 30%; }
+    .foto-carrossel { aspect-ratio: 4 / 3; object-position: center 30%; }
     .rodape-sobre { flex-direction: column; gap: 16px; }
 }
